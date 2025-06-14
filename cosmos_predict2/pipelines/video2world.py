@@ -851,6 +851,21 @@ class Video2WorldPipeline(BasePipeline):
             vid_input, prompt, negative_prompt, num_latent_conditional_frames=num_latent_conditional_frames
         )
 
+        return self._process_batch(
+            data_batch=data_batch,
+            guidance=guidance,
+            seed=seed,
+            num_sampling_step=num_sampling_step,
+        )
+
+    @torch.no_grad()
+    def _process_batch(
+        self,
+        data_batch,
+        guidance: float = 7.0,
+        seed: int = 0,
+        num_sampling_step: int = 35,
+    ):
         # preprocess
         self._normalize_video_databatch_inplace(data_batch)
         self._augment_image_dim_inplace(data_batch)
@@ -929,6 +944,8 @@ class Video2WorldPipeline(BasePipeline):
 
         # Run video guardrail on the generated video and apply postprocessing
         if self.video_guardrail_runner is not None:
+            from cosmos_predict2.auxiliary.guardrail.common import presets as guardrail_presets
+
             # Clamp to safe range before normalization
             video = video.clamp(-1.0, 1.0)
             video_normalized = (video + 1) / 2  # [0, 1]
