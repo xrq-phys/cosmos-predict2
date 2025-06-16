@@ -118,6 +118,20 @@ def read_and_process_image(
     img = Image.open(img_path)
     img = torchvision.transforms.functional.to_tensor(img)
 
+    return process_image(
+        img=img,
+        resolution=resolution,
+        num_video_frames=num_video_frames,
+        resize=resize,
+    )
+
+
+def process_image(
+    img: torch.Tensor,
+    resolution: list[int],
+    num_video_frames: int,
+    resize: bool = True,
+) -> torch.Tensor:
     # Resize the single image first if needed (more efficient than resizing full tensor later)
     if resize:
         orig_h, orig_w = img.shape[1], img.shape[2]
