@@ -452,10 +452,20 @@ class Video2WorldPipeline(BasePipeline):
     def encode_prompt(
         self, prompts: Union[str, List[str]], max_length: int = 512, return_mask: bool = False
     ) -> torch.Tensor:
+        offload_to_host = any([p.device.type == 'cpu' for p in self.text_encoder.parameters()])
+
         if isinstance(prompts, str):
             prompts = [prompts]
 
-        return self.text_encoder.encode_prompts(prompts, max_length=max_length, return_mask=return_mask)  # type: ignore
+        if offload_to_host:
+            self.text_encoder.to(device="cuda")
+
+        embeddings = self.text_encoder.encode_prompts(prompts, max_length=max_length, return_mask=return_mask)  # type: ignore
+
+        if offload_to_host:
+            self.text_encoder.to(device="cpu")
+
+        return embeddings
 
     @torch.no_grad()
     def decode(self, latent: torch.Tensor) -> torch.Tensor:
