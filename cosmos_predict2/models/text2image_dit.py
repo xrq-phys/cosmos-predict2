@@ -1352,7 +1352,9 @@ class MiniTrainDIT(WeightTrainingStat):
             layer_names = [ engine_inspector.get_layer_information(i, trt.LayerInformationFormat.ONELINE) for i in range(self.engine.num_layers) ]
             self.has_bert_attn = any([ "BertAttention" in name for name in layer_names ])
             self.has_gpt_attn = any([ "GPTAttention" in name for name in layer_names ])
-            assert self.has_bert_attn or self.has_gpt_attn, "Engine should contain either BertAttention or GPTAttention as its self-attention backend"
+            self.has_ring_sage_attn = any([ "RingSageAttentionFusedQKV" in name for name in layer_names ])
+            assert self.has_bert_attn or self.has_gpt_attn or self.has_ring_sage_attn, \
+                "Engine should contain one of (BertAttention, GPTAttention, RingSageAttentionFusedQKV) as its self-attention backend"
 
             # Prepare supplementary input tensors
             self.register_buffer("host_max_attention_window", torch.tensor([0], dtype=torch.int32)) # (1, )
@@ -1361,6 +1363,34 @@ class MiniTrainDIT(WeightTrainingStat):
             self.register_buffer("host_context_length", torch.tensor([-1], dtype=torch.int32)) # (B, ): Cached value for the observed T*H*W
             self.register_buffer("host_runtime_perf_knobs", torch.tensor([0], dtype=torch.int64)) # (Optional at C++ level): Empty
             self.register_buffer("host_context_progress", torch.tensor([0], dtype=torch.int64)) # (Optional at C++ level): Empty
+            self.register_buffer("host_cp_size", torch.tensor([1], dtype=torch.int32)) # (1, )
+            self.register_buffer("host_cp_rank", torch.tensor([0], dtype=torch.int32)) # (1, )
+            self.register_buffer("host_cp_group", torch.tensor([0] * 72, dtype=torch.int32)) # (72, )
+
+            # Compatibility hack
+            self.self_attn = MiniTrainDIT.TensorRTBlock.Compat(self)
+
+        class Compat:
+            def __init__(self, hook):
+                self.hook = hook
+
+            def set_context_parallel_group(self, *args, **kwargs):
+                return self.hook.set_context_parallel_group(*args, **kwargs)
+
+        def set_context_parallel_group(
+            self, process_group: Optional[ProcessGroup], ranks: List[int], stream: torch.cuda.Stream
+        ):
+            if process_group is not None:
+                from cosmos_predict2.utils.ext import sageattn_ring
+                sageattn_ring.set_cp_procgrp(ranks, process_group)
+
+                self.host_cp_rank[0] = process_group.rank()
+                self.host_cp_size[0] = len(ranks)
+                for i, rank in enumerate(ranks):
+                    self.host_cp_group[i] = rank
+            else:
+                self.host_cp_rank[0] = 0
+                self.host_cp_size[0] = 1
 
         def forward(
             self,
@@ -1398,6 +1428,10 @@ class MiniTrainDIT(WeightTrainingStat):
                 self.context.set_tensor_address('host_context_length', self.host_context_length.data_ptr())
                 self.context.set_tensor_address('host_runtime_perf_knobs', self.host_runtime_perf_knobs.data_ptr())
                 self.context.set_tensor_address('host_context_progress', self.host_context_progress.data_ptr())
+            if self.has_ring_sage_attn:
+                self.context.set_tensor_address('host_cp_size', self.host_cp_size.data_ptr())
+                self.context.set_tensor_address('host_cp_rank', self.host_cp_rank.data_ptr())
+                self.context.set_tensor_address('host_cp_group', self.host_cp_group.data_ptr())
 
             self.trt_stream.wait_stream(self.pyt_stream)
             self.context.execute_async_v3(self.trt_stream.cuda_stream)
@@ -1532,12 +1566,11 @@ class MiniTrainDIT(WeightTrainingStat):
 
         # attention
         for block in self.blocks:
-            if isinstance(block, Block):
-                block.self_attn.set_context_parallel_group(
-                    process_group=None,
-                    ranks=None,
-                    stream=torch.cuda.Stream(),
-                )
+            block.self_attn.set_context_parallel_group(
+                process_group=None,
+                ranks=None,
+                stream=torch.cuda.Stream(),
+            )
 
         self._is_context_parallel_enabled = False
 
@@ -1550,12 +1583,11 @@ class MiniTrainDIT(WeightTrainingStat):
         # attention
         cp_ranks = get_process_group_ranks(process_group)
         for block in self.blocks:
-            if isinstance(block, Block):
-                block.self_attn.set_context_parallel_group(
-                    process_group=process_group,
-                    ranks=cp_ranks,
-                    stream=torch.cuda.Stream(),
-                )
+            block.self_attn.set_context_parallel_group(
+                process_group=process_group,
+                ranks=cp_ranks,
+                stream=torch.cuda.Stream(),
+            )
 
         self._is_context_parallel_enabled = True
 
