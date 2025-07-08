@@ -18,9 +18,8 @@ from enum import Enum
 
 import attrs
 
-from cosmos_predict2.conditioner import BooleanFlag, ReMapkey, TextAttr
+from cosmos_predict2.conditioner import BooleanFlag, ReMapkey, TextAttr, VideoConditioner
 from cosmos_predict2.configs.base.defaults.ema import EMAConfig
-from cosmos_predict2.configs.vid2vid.defaults.conditioner import Vid2VidConditioner
 from cosmos_predict2.models.text2image_dit import SACConfig
 from cosmos_predict2.models.video2world_dit import MinimalV1LVGDiT
 from cosmos_predict2.tokenizers.tokenizer import TokenizerInterface
@@ -124,7 +123,7 @@ PREDICT2_VIDEO2WORLD_NET_2B = L(MinimalV1LVGDiT)(
 
 PREDICT2_VIDEO2WORLD_PIPELINE_2B = Video2WorldPipelineConfig(
     adjust_video_noise=True,
-    conditioner=L(Vid2VidConditioner)(
+    conditioner=L(VideoConditioner)(
         fps=L(ReMapkey)(
             dropout_rate=0.0,
             dtype=None,
@@ -214,7 +213,7 @@ PREDICT2_VIDEO2WORLD_NET_14B = L(MinimalV1LVGDiT)(
 
 PREDICT2_VIDEO2WORLD_PIPELINE_14B = Video2WorldPipelineConfig(
     adjust_video_noise=True,
-    conditioner=L(Vid2VidConditioner)(
+    conditioner=L(VideoConditioner)(
         fps=L(ReMapkey)(
             dropout_rate=0.0,
             dtype=None,
