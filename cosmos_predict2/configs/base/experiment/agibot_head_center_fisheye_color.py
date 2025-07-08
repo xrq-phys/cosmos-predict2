@@ -141,6 +141,7 @@ predict2_video2world_training_2b_agibot_head_center_fisheye_color = dict(
         config=dict(
             pipe_config=dict(
                 ema=dict(enabled=True),
+                prompt_refiner_config=dict(enabled=False),
                 guardrail_config=dict(enabled=False),
                 max_num_conditional_frames=1,
                 min_num_conditional_frames=1,
@@ -174,7 +175,7 @@ predict2_video2world_training_2b_agibot_head_center_fisheye_color = dict(
         warm_up_steps=[2_000],
         cycle_lengths=[400_000],
         f_max=[0.99],
-        f_min=[0.4],
+        f_min=[0.0],
     ),
 )
 
@@ -268,6 +269,7 @@ predict2_video2world_training_14b_agibot_head_center_fisheye_color = dict(
         config=dict(
             pipe_config=dict(
                 ema=dict(enabled=True),
+                prompt_refiner_config=dict(enabled=False),
                 guardrail_config=dict(enabled=False),
                 max_num_conditional_frames=1,
                 min_num_conditional_frames=1,
@@ -297,7 +299,7 @@ predict2_video2world_training_14b_agibot_head_center_fisheye_color = dict(
         warm_up_steps=[2_000],
         cycle_lengths=[50_000],
         f_max=[0.2],
-        f_min=[0.1],
+        f_min=[0.0],
     ),
 )
 
