@@ -15,6 +15,7 @@
 
 import math
 import os
+import gc
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy as np
@@ -293,6 +294,7 @@ class Video2WorldPipeline(BasePipeline):
         config: Video2WorldPipelineConfig,
         dit_path: str = "",
         text_encoder_path: str = "",
+        offload_text_encoder: bool = False,
         device: str = "cuda",
         torch_dtype: torch.dtype = torch.bfloat16,
         load_prompt_refiner: bool = False,
@@ -331,8 +333,9 @@ class Video2WorldPipeline(BasePipeline):
         # 4. Load text encoder
         if text_encoder_path:
             # inference
-            pipe.text_encoder = CosmosT5TextEncoder(device=device, cache_dir=text_encoder_path)
-            pipe.text_encoder.to(device)
+            pipe.text_encoder = CosmosT5TextEncoder(device=device, cache_dir=text_encoder_path) # device here must be final device used to run embedding
+            text_encoder_device = "cpu" if offload_text_encoder else device
+            pipe.text_encoder.to(device=text_encoder_device)
         else:
             # training
             pipe.text_encoder = None
@@ -489,6 +492,8 @@ class Video2WorldPipeline(BasePipeline):
 
         if offload_to_host:
             self.text_encoder.to(device="cpu")
+            gc.collect()
+            torch.cuda.empty_cache()
 
         return embeddings
 
