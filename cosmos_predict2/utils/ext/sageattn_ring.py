@@ -1,33 +1,11 @@
 from typing import Optional, List
-import threading
 
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
+from .cp_comms import get_cp_procgrp, get_cp_stream, get_sm_version
 from .sageattn_fp8 import sageattn_fp8_quantize_all, sageattn_fp8_from_quantized
 from .sageattn_quant import FromPoolAllocator
-
-_sageattn_context = threading.local()
-_sageattn_context.sm_version = {}
-_sageattn_context.cp_procgrp = {}
-_sageattn_context.cp_scomm = torch.cuda.Stream(priority=-1)
-
-def set_cp_procgrp(cp_group_list: List[int], procgrp: dist.ProcessGroup) -> None:
-    _sageattn_context.cp_procgrp[tuple(cp_group_list)] = procgrp
-
-def _get_cp_procgrp(cp_group_list: List[int]) -> dist.ProcessGroup:
-    cp_group = tuple(cp_group_list)
-    if cp_group not in _sageattn_context.cp_procgrp:
-        raise RuntimeError(f"CP group {cp_group} not found. Forbidding creation for safety. Only comment out this error when you know what you are doing.")
-        _sageattn_context.cp_procgrp[cp_group] = dist.new_group(ranks=cp_group)
-    return _sageattn_context.cp_procgrp[cp_group]
-
-def _get_sm_version(rank: int) -> int:
-    if rank not in _sageattn_context.sm_version:
-        gpu_props = torch.cuda.get_device_properties(rank)
-        sm_version = gpu_props.major * 10 + gpu_props.minor
-        _sageattn_context.sm_version[rank] = sm_version
-    return _sageattn_context.sm_version[rank]
 
 
 # Util function to perform weighted sum according to LSE
@@ -58,10 +36,10 @@ def ring_sage_attention_exec(
     assert k_t.shape[0] == 1, "Batching unsupported yet."
 
     # Obtain PyTorch metadata
-    sm_version = _get_sm_version(k_t.device.index)
-    scomm = _sageattn_context.cp_scomm
+    sm_version = get_sm_version(k_t.device.index)
+    scomm = get_cp_stream()
     cp_active = cp_size > 1 and cp_group is not None
-    procgrp = _get_cp_procgrp(cp_group) if cp_active else None
+    procgrp = get_cp_procgrp(cp_group) if cp_active else None
 
     # Determine the neighbouring nodes to send / receive tensors
     recv_from = (cp_rank + 1) % cp_size

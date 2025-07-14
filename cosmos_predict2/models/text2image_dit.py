@@ -1381,8 +1381,8 @@ class MiniTrainDIT(WeightTrainingStat):
             self, process_group: Optional[ProcessGroup], ranks: List[int], stream: torch.cuda.Stream
         ):
             if process_group is not None:
-                from cosmos_predict2.utils.ext import sageattn_ring
-                sageattn_ring.set_cp_procgrp(ranks, process_group)
+                from cosmos_predict2.utils.ext import cp_comms
+                cp_comms.set_cp_procgrp(ranks, process_group)
 
                 self.host_cp_rank[0] = process_group.rank()
                 self.host_cp_size[0] = len(ranks)
