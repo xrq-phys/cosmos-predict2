@@ -165,6 +165,9 @@ def parse_args() -> argparse.Namespace:
         "--offload_text_encoder", action="store_true", help="Offload text encoder to CPU to save GPU memory"
     )
     parser.add_argument(
+        "--downcast_text_encoder", action="store_true", help="Cast text encoder from checkpoint precision to pipeline precision"
+    )
+    parser.add_argument(
         "--benchmark",
         action="store_true",
         help="Run the generation in benchmark mode. It means that generation will be rerun a few times and the average generation time will be shown.",
@@ -279,6 +282,7 @@ def setup_pipeline(args: argparse.Namespace, text_encoder=None):
         dit_path=dit_path,
         text_encoder_path=text_encoder_path,
         offload_text_encoder=args.offload_text_encoder,
+        downcast_text_encoder=args.downcast_text_encoder,
         device="cuda",
         torch_dtype=torch.bfloat16,
         load_ema_to_reg=args.load_ema,

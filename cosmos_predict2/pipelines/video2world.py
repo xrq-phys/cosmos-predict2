@@ -270,6 +270,7 @@ class Video2WorldPipeline(BasePipeline):
         dit_path: str = "",
         text_encoder_path: str = "",
         offload_text_encoder: bool = False,
+        downcast_text_encoder: bool = False,
         device: str = "cuda",
         torch_dtype: torch.dtype = torch.bfloat16,
         load_ema_to_reg: bool = False,
@@ -309,7 +310,16 @@ class Video2WorldPipeline(BasePipeline):
         # 4. Load text encoder
         if text_encoder_path:
             # inference
-            pipe.text_encoder = CosmosT5TextEncoder(device=device, cache_dir=text_encoder_path) # device here must be final device used to run embedding
+            if downcast_text_encoder:
+                # Cast text encoder to pipeline precision
+                text_encoder_dtype = pipe.precision
+            else:
+                # Keep original precision from checkpoint
+                text_encoder_dtype = None
+
+            pipe.text_encoder = CosmosT5TextEncoder(device=device, # device here must be final device used to run embedding
+                                                    cache_dir=text_encoder_path,
+                                                    torch_dtype=text_encoder_dtype)
             text_encoder_device = "cpu" if offload_text_encoder else device
             pipe.text_encoder.to(device=text_encoder_device)
         else:
