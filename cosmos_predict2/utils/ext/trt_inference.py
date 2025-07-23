@@ -5,7 +5,6 @@ import torch
 import numpy as np
 
 import tensorrt as trt
-import tensorrt_llm as _ # registers attention plugins
 import tensorrt.plugin as trtp
 from einops import rearrange
 
@@ -120,5 +119,5 @@ try:
             out_t.copy_(out1)
 
 except Exception as e:
-    log.warning(f"Cannot create RingSageAttentionFusedQKV plugin: {e}. CP will be unavailable.")
+    raise RuntimeError(f"Cannot create RingSageAttentionFusedQKV plugin: {e}. CP will be unavailable.")
 
