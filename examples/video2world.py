@@ -135,6 +135,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--offload_text_encoder", action="store_true", help="Offload text encoder to CPU to save GPU memory"
     )
+    parser.add_argument(
+        "--downcast_text_encoder", action="store_true", help="Cast text encoder from checkpoint precision to pipeline precision"
+    )
     return parser.parse_args()
 
 
@@ -187,6 +190,7 @@ def setup_pipeline(args: argparse.Namespace):
         dit_path=dit_path,
         text_encoder_path=text_encoder_path,
         offload_text_encoder=args.offload_text_encoder,
+        downcast_text_encoder=args.downcast_text_encoder,
         device="cuda",
         torch_dtype=torch.bfloat16,
         load_prompt_refiner=True,
