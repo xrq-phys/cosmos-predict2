@@ -1429,13 +1429,13 @@ class MiniTrainDIT(WeightTrainingStat):
                 self.context.set_tensor_address('host_context_length', self.host_context_length.data_ptr())
                 self.context.set_tensor_address('host_runtime_perf_knobs', self.host_runtime_perf_knobs.data_ptr())
                 self.context.set_tensor_address('host_context_progress', self.host_context_progress.data_ptr())
-            if self.has_ring_sage_attn:
-                self.context.set_tensor_address('host_cp_size', self.host_cp_size.data_ptr())
-                self.context.set_tensor_address('host_cp_rank', self.host_cp_rank.data_ptr())
-                self.context.set_tensor_address('host_cp_group', self.host_cp_group.data_ptr())
             if self.has_natten:
                 host_video_size_3 = torch.tensor([T, H, W], dtype=torch.int32)
                 self.context.set_tensor_address("host_video_size", host_video_size_3.data_ptr())
+            if self.has_natten or self.has_ring_sage_attn:
+                self.context.set_tensor_address('host_cp_size', self.host_cp_size.data_ptr())
+                self.context.set_tensor_address('host_cp_rank', self.host_cp_rank.data_ptr())
+                self.context.set_tensor_address('host_cp_group', self.host_cp_group.data_ptr())
 
             self.trt_stream.wait_stream(self.pyt_stream)
             self.context.execute_async_v3(self.trt_stream.cuda_stream)

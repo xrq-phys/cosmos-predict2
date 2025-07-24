@@ -136,7 +136,7 @@ def convert_dit_onnx2trt(args):
         if has_natten:
             host_video_size_3 = torch.tensor([T, H, W], dtype=torch.int32)
             context.set_tensor_address("host_video_size", host_video_size_3.data_ptr())
-        if ring_attn:
+        if has_natten or ring_attn:
             host_cp_size_1 = torch.tensor([1], dtype=torch.int32)
             host_cp_rank_1 = torch.tensor([0], dtype=torch.int32)
             host_cp_group_72 = torch.tensor([0], dtype=torch.int32) # Only [:cp_size] will be used

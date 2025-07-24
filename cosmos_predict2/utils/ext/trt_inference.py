@@ -129,8 +129,8 @@ except Exception as e:
 
 try:
     import natten
-    from natten.functional import neighborhood_attention_generic
     from cosmos_predict2.utils.ext.natten_interface import NeighborhoodAttentionConfigs
+    from cosmos_predict2.utils.ext.natten_a2a import a2a_netten_exec
 
     natten.use_kv_parallelism_in_fused_na(True)
     natten.set_memory_usage_preference("unrestricted")
@@ -142,6 +142,9 @@ try:
         v : trtp.TensorDesc,
         seq_len: trtp.TensorDesc, # Ignored
         host_video_size : trtp.TensorDesc,
+        host_cp_size : trtp.TensorDesc,
+        host_cp_rank : trtp.TensorDesc,
+        host_cp_group : trtp.TensorDesc,
         window_size : NDArray[np.int32],
         stride : NDArray[np.int32],
         dilation : NDArray[np.int32],
@@ -159,6 +162,9 @@ try:
         v : trtp.Tensor,
         seq_len: trtp.Tensor, # Ignored
         host_video_size : trtp.Tensor,
+        host_cp_size : trtp.Tensor,
+        host_cp_rank : trtp.Tensor,
+        host_cp_group : trtp.Tensor,
         window_size : NDArray[np.int32],
         stride : NDArray[np.int32],
         dilation : NDArray[np.int32],
@@ -167,6 +173,9 @@ try:
         stream : int
     ):
         T, H, W = np.ctypeslib.as_array((ctypes.c_int * 3).from_address(host_video_size.data_ptr)).tolist()
+        cp_size1 = np.ctypeslib.as_array(ctypes.c_int.from_address(host_cp_size.data_ptr)).item()
+        cp_rank1 = np.ctypeslib.as_array(ctypes.c_int.from_address(host_cp_rank.data_ptr)).item()
+        cp_group72 = np.ctypeslib.as_array((ctypes.c_int * cp_size1).from_address(host_cp_group.data_ptr)).tolist()
         ext_stream = torch.cuda.ExternalStream(stream)
 
         def _convert_natten_args(arg: NDArray[np.int32]):
@@ -195,23 +204,27 @@ try:
             stride=stride_arg,
             dilation=dilation_arg,
             is_causal=False,
-            input_shape=(T, H, W),
+            input_shape=(T*cp_size1, H, W),
             base_size=base_size_arg,
         )
 
-        with torch.cuda.stream(ext_stream):
-            out1 = neighborhood_attention_generic(
-                query=q_t,
-                key=k_t,
-                value=v_t,
-                kernel_size=window_size_arg,
-                stride=stride_arg,
-                dilation=dilation_arg,
-                is_causal=is_causal,
-                **natten_configuration,
-            )
-            out1 = out1.flatten(1, 3).flatten(-2)
+        out1 = a2a_netten_exec(
+            query=q_t,
+            key=k_t,
+            value=v_t,
+            cp_size=cp_size1,
+            cp_rank=cp_rank1,
+            cp_group=cp_group72,
+            stream=ext_stream,
+            kernel_size=window_size_arg,
+            stride=stride_arg,
+            dilation=dilation_arg,
+            is_causal=is_causal,
+            **natten_configuration,
+        )
+        out1 = out1.flatten(1, 3).flatten(-2)
 
+        with torch.cuda.stream(ext_stream):
             out_t.copy_(out1)
 
 except Exception as e:

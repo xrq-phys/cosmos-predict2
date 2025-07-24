@@ -139,7 +139,7 @@ def build_dit_block_from_onnx(
         onnx_graph.inputs.append(host_context_progress)
     if has_natten:
         onnx_graph.inputs.append(host_video_size)
-    if oss_sageattn:
+    if has_natten or oss_sageattn:
         onnx_graph.inputs.append(host_cp_size)
         onnx_graph.inputs.append(host_cp_rank)
         onnx_graph.inputs.append(host_cp_group)
@@ -285,6 +285,9 @@ def build_dit_block_from_onnx(
             assert len(node.inputs) == 3, "Where are our Q, K, and V?"
             node.inputs.append(context_lengths)
             node.inputs.append(host_video_size)
+            node.inputs.append(host_cp_size)
+            node.inputs.append(host_cp_rank)
+            node.inputs.append(host_cp_group)
 
         if node.domain == "Cosmos" and node.op in ["QSmoothFactor", "KSmoothFactor"]:
             node.attrs["cp_size"] = cp_size

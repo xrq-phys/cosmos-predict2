@@ -1,4 +1,32 @@
+from typing import Dict, Optional, Union
+
 import torch
+from torch import Tensor
+
+from natten.functional import attention
+from natten.types import (
+    CausalArgTypeOrDed,
+    DimensionType,
+    DimensionTypeOrDed,
+    KernelSchedule,
+)
+from natten.utils.checks import (
+    additional_kv_tensor_checks,
+    check_all_args,
+    check_args_against_input,
+    check_kernel_schedule,
+    is_self_attention,
+    na_tensor_checks,
+)
+from natten.backends import (
+    choose_backend,
+    cutlass_blackwell_fna_generic,
+    cutlass_hopper_fna_generic,
+    cutlass_fna_generic,
+    flex_fna_generic,
+)
+
+from imaginaire.utils import log
 
 def get_device_cc(device) -> int:
     """
@@ -96,3 +124,156 @@ class NeighborhoodAttentionConfigs:
             natten_configuration = cls.inference_configs[compute_cap]
 
         return natten_configuration
+
+class NeighborhoodAttentionRunner:
+    @staticmethod
+    def run(
+        query: Tensor,
+        key: Tensor,
+        value: Tensor,
+        kernel_size: DimensionTypeOrDed,
+        stride: DimensionTypeOrDed = 1,
+        dilation: DimensionTypeOrDed = 1,
+        is_causal: Optional[CausalArgTypeOrDed] = False,
+        scale: Optional[float] = None,
+        attention_kwargs: Optional[Dict] = None,
+        return_lse: bool = False,
+        # Perf-related args
+        backend: Optional[str] = None,
+        q_tile_shape: Optional[DimensionType] = None,
+        kv_tile_shape: Optional[DimensionType] = None,
+        backward_q_tile_shape: Optional[DimensionType] = None,
+        backward_kv_tile_shape: Optional[DimensionType] = None,
+        backward_kv_splits: Optional[DimensionType] = None,
+        backward_use_pt_reduction: bool = False,
+        run_persistent_kernel: bool = True,
+        kernel_schedule: Optional[Union[str, KernelSchedule]] = None,
+        torch_compile: bool = False,
+    ) -> Tensor:
+        """Modified from natten.functional.neighborhood_attention_generic"""
+
+        na_tensor_checks(query, key, value)
+        additional_kv_tensor_checks(query, key, value, None, None)
+        kernel_schedule = check_kernel_schedule(kernel_schedule)
+
+        na_dim = query.dim() - 3  # batch, heads, head_dim
+
+        assert na_dim in [1, 2, 3]
+
+        kernel_size, stride, dilation, is_causal = check_all_args(
+            na_dim, kernel_size, stride, dilation, is_causal
+        )
+
+        check_args_against_input(
+            query,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            is_causal=is_causal,
+        )
+
+        if is_self_attention(query, kernel_size=kernel_size, is_causal=is_causal):
+            log.debug(
+                f"{query.shape=} with {kernel_size=} and {is_causal=} is self attention. "
+                "Calling attention instead of neighborhood attention directly."
+            )
+
+            query_shape = query.shape
+            query = query.flatten(1, na_dim)
+            key = key.flatten(1, na_dim)
+            value = value.flatten(1, na_dim)
+
+            attn_kwargs = attention_kwargs or {}
+            out: Tensor = attention(  # type: ignore[assignment]
+                query,
+                key,
+                value,
+                scale=scale,
+                return_lse=return_lse,
+                **attn_kwargs,
+            )
+            output_shape = [s for s in query_shape[:-1]] + [value.shape[-1]]
+            if not return_lse:
+                return out.reshape(*output_shape)
+            else:
+                return (out[0].reshape(*output_shape), out[1])
+
+        scale = scale or query.shape[-1] ** -0.5
+
+        backend = backend or choose_backend(query, key, value, torch_compile=torch_compile)
+
+        if backend == "blackwell-fna":
+            outputs = cutlass_blackwell_fna_generic(
+                query=query,
+                key=key,
+                value=value,
+                kernel_size=kernel_size,
+                stride=stride,
+                dilation=dilation,
+                is_causal=is_causal,
+                scale=scale,
+                q_tile_shape=q_tile_shape,
+                kv_tile_shape=kv_tile_shape,
+                backward_q_tile_shape=backward_q_tile_shape,
+                backward_kv_tile_shape=backward_kv_tile_shape,
+                run_persistent_kernel=run_persistent_kernel,
+                return_lse=return_lse,
+            )
+
+        elif backend == "hopper-fna":
+            outputs = cutlass_hopper_fna_generic(
+                query=query,
+                key=key,
+                value=value,
+                kernel_size=kernel_size,
+                stride=stride,
+                dilation=dilation,
+                is_causal=is_causal,
+                scale=scale,
+                q_tile_shape=q_tile_shape,
+                kv_tile_shape=kv_tile_shape,
+                backward_q_tile_shape=backward_q_tile_shape,
+                backward_kv_tile_shape=backward_kv_tile_shape,
+                kernel_schedule=kernel_schedule,
+                return_lse=return_lse,
+            )
+
+        elif backend == "cutlass-fna":
+            outputs = cutlass_fna_generic(
+                query=query,
+                key=key,
+                value=value,
+                kernel_size=kernel_size,
+                stride=stride,
+                dilation=dilation,
+                is_causal=is_causal,
+                scale=scale,
+                q_tile_shape=q_tile_shape,
+                kv_tile_shape=kv_tile_shape,
+                backward_q_tile_shape=backward_q_tile_shape,
+                backward_kv_tile_shape=backward_kv_tile_shape,
+                backward_kv_splits=backward_kv_splits,
+                backward_use_pt_reduction=backward_use_pt_reduction,
+                return_lse=return_lse,
+            )
+
+        elif backend == "flex-fna":
+            outputs = flex_fna_generic(
+                query=query,
+                key=key,
+                value=value,
+                kernel_size=kernel_size,
+                stride=stride,
+                dilation=dilation,
+                is_causal=is_causal,
+                scale=scale,
+                q_tile_shape=q_tile_shape,
+                kv_tile_shape=kv_tile_shape,
+                torch_compile=torch_compile,
+                return_lse=return_lse,
+            )
+
+        else:
+            raise NotImplementedError(f"Unrecognized NATTEN backend {backend}.")
+
+        return outputs
