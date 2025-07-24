@@ -1353,8 +1353,9 @@ class MiniTrainDIT(WeightTrainingStat):
             self.has_bert_attn = any([ "BertAttention" in name for name in layer_names ])
             self.has_gpt_attn = any([ "GPTAttention" in name for name in layer_names ])
             self.has_ring_sage_attn = any([ "RingSageAttentionFusedQKV" in name for name in layer_names ])
-            assert self.has_bert_attn or self.has_gpt_attn or self.has_ring_sage_attn, \
-                "Engine should contain one of (BertAttention, GPTAttention, RingSageAttentionFusedQKV) as its self-attention backend"
+            self.has_natten = any([ "NeighborhoodAttention" in name for name in layer_names ])
+            assert self.has_bert_attn or self.has_gpt_attn or self.has_ring_sage_attn or self.has_natten, \
+                "Engine should contain one of (BertAttention, GPTAttention, RingSageAttentionFusedQKV, NeighborhoodAttention) as its self-attention backend"
 
             # Prepare supplementary input tensors
             self.register_buffer("host_max_attention_window", torch.tensor([0], dtype=torch.int32)) # (1, )
@@ -1432,6 +1433,9 @@ class MiniTrainDIT(WeightTrainingStat):
                 self.context.set_tensor_address('host_cp_size', self.host_cp_size.data_ptr())
                 self.context.set_tensor_address('host_cp_rank', self.host_cp_rank.data_ptr())
                 self.context.set_tensor_address('host_cp_group', self.host_cp_group.data_ptr())
+            if self.has_natten:
+                host_video_size_3 = torch.tensor([T, H, W], dtype=torch.int32)
+                self.context.set_tensor_address("host_video_size", host_video_size_3.data_ptr())
 
             self.trt_stream.wait_stream(self.pyt_stream)
             self.context.execute_async_v3(self.trt_stream.cuda_stream)

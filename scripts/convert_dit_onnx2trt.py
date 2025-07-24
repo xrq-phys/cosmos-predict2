@@ -96,9 +96,11 @@ def convert_dit_onnx2trt(args):
         context = trt_inference.create_execution_context_from_pool(engine)
 
         inspector = engine.create_engine_inspector()
-        has_gpt_attention = any([
-            "GPTAttention" in inspector.get_layer_information(i, trt.LayerInformationFormat.ONELINE) for i in range(engine.num_layers)
+        contains_layer = lambda name: any([
+            name in inspector.get_layer_information(i, trt.LayerInformationFormat.ONELINE) for i in range(engine.num_layers)
         ])
+        has_gpt_attention = contains_layer("GPTAttention")
+        has_natten = contains_layer("NeighborhoodAttention")
 
         _alloc = lambda shape: torch.randn(shape, requires_grad=False, device="cuda", dtype=torch.bfloat16)
         _regin = lambda name, tensor: trt_inference.trt_set_tensor_check(context, name, tensor, check_shape=True)
@@ -131,6 +133,9 @@ def convert_dit_onnx2trt(args):
             context.set_tensor_address("host_context_length", host_context_length_B.data_ptr())
             context.set_tensor_address("host_runtime_perf_knobs", host_runtime_perf_knobs_1.data_ptr())
             context.set_tensor_address("host_context_progress", host_context_progress_1.data_ptr())
+        if has_natten:
+            host_video_size_3 = torch.tensor([T, H, W], dtype=torch.int32)
+            context.set_tensor_address("host_video_size", host_video_size_3.data_ptr())
         if ring_attn:
             host_cp_size_1 = torch.tensor([1], dtype=torch.int32)
             host_cp_rank_1 = torch.tensor([0], dtype=torch.int32)

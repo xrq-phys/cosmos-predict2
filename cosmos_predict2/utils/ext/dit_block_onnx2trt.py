@@ -106,6 +106,9 @@ def build_dit_block_from_onnx(
     # GPTAttention node presence check
     has_gpt_attention = len([node for node in onnx_graph.nodes if node.op == "GPTAttention"]) > 0
 
+    # NATTEN node presence check
+    has_natten = len([node for node in onnx_graph.nodes if node.op == "NeighborhoodAttention"]) > 0
+
     # Additional sequence length tensor for TRTLLM attention ops
     context_lengths = gs.Variable(name="context_lengths", shape=(B,), dtype=np.int32)
 
@@ -122,6 +125,9 @@ def build_dit_block_from_onnx(
     host_cp_rank = gs.Variable(name="host_cp_rank", shape=(1,), dtype=np.int32)
     host_cp_group = gs.Variable(name="host_cp_group", shape=(72,), dtype=np.int32)
 
+    # Create host-side tensors for NeighborhoodAttention
+    host_video_size = gs.Variable(name="host_video_size", shape=(3,), dtype=np.int32)
+
     onnx_graph.inputs.append(context_lengths)
     if has_gpt_attention:
         # NOTE: Host addresses can only be supplied from inputs
@@ -131,6 +137,8 @@ def build_dit_block_from_onnx(
         onnx_graph.inputs.append(host_context_length)
         onnx_graph.inputs.append(host_runtime_perf_knobs)
         onnx_graph.inputs.append(host_context_progress)
+    if has_natten:
+        onnx_graph.inputs.append(host_video_size)
     if oss_sageattn:
         onnx_graph.inputs.append(host_cp_size)
         onnx_graph.inputs.append(host_cp_rank)
@@ -272,6 +280,11 @@ def build_dit_block_from_onnx(
                             if n.inputs[i] == node.outputs[0]:
                                 n.inputs[i] = attn_out_dequant_out
                     onnx_graph.nodes.append(attn_out_dequant)
+
+        if node.domain == "Cosmos" and node.op == "NeighborhoodAttention":
+            assert len(node.inputs) == 3, "Where are our Q, K, and V?"
+            node.inputs.append(context_lengths)
+            node.inputs.append(host_video_size)
 
         if node.domain == "Cosmos" and node.op in ["QSmoothFactor", "KSmoothFactor"]:
             node.attrs["cp_size"] = cp_size
