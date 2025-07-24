@@ -284,7 +284,6 @@ if __name__ == "__main__":
     args = parse_args()
     try:
         pipe = setup_pipeline(args)
-        pipe.dit.load_trt('output/trt.fp8.cpv3/cosmos_predict2_dit_net_block')
         generate_video(args, pipe)
     finally:
         # Make sure to clean up the distributed environment
