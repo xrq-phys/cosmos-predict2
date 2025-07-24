@@ -39,7 +39,7 @@ ln -sf $CONDA_PREFIX/lib/python3.10/site-packages/nvidia/*/include/* $CONDA_PREF
 ln -sf $CONDA_PREFIX/lib/python3.10/site-packages/nvidia/*/include/* $CONDA_PREFIX/include/python3.10
 CUDA_HOME=$CONDA_PREFIX pip install transformer-engine[pytorch]==1.13.0
 # NATTEN
-CUDA_HOME=$CONDA_PREFIX pip install natten==0.20.1
+CUDA_HOME=$CONDA_PREFIX pip install natten==0.21.0
 
 # Apex library for training (optional if inference only)
 CUDA_HOME=$CONDA_PREFIX pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext --cuda_ext" git+https://github.com/NVIDIA/apex.git
@@ -61,7 +61,7 @@ Please make sure you have access to Docker on your machine and the [NVIDIA Conta
 
    ```bash
    # Pull the Cosmos-Predict2 container
-   docker pull nvcr.io/nvidia/cosmos/cosmos-predict2-container:1.1
+   docker pull nvcr.io/nvidia/cosmos/cosmos-predict2-container:1.2
    ```
 
 * **Option 2B: Build container from Dockerfile**
@@ -74,7 +74,7 @@ Please make sure you have access to Docker on your machine and the [NVIDIA Conta
 
 * **Running the container**
 
-   Use the following command to run either container, replacing `[CONTAINER_NAME]` with either `nvcr.io/nvidia/cosmos/cosmos-predict2-container:1.1` or `cosmos-predict2-local`:
+   Use the following command to run either container, replacing `[CONTAINER_NAME]` with either `nvcr.io/nvidia/cosmos/cosmos-predict2-container:1.2` or `cosmos-predict2-local`:
 
    ```bash
    # Run the container with GPU support and mount necessary directories
