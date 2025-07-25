@@ -51,6 +51,9 @@ def ring_sage_attention_exec(
     kv_size_byte += v_t.numel() * torch.float8_e4m3fn.itemsize * 2 # v_fp8 + (rough)v_scale
     alloc_kv = FromPoolAllocator(torch.empty(kv_size_byte, dtype=torch.uint8, device=q_t.device))
 
+    # CUDA events for ping-pong scheduling
+    compute_finish_events = []
+
     with torch.cuda.stream(ext_stream), torch.cuda.nvtx.range('Ring Attention local chunks'):
         # Compute local components
         # out will have shape (1, S, H, D)
@@ -75,6 +78,10 @@ def ring_sage_attention_exec(
             sm_version=sm_version,
         )
 
+        # Pin the event when each attention finishes
+        compute_finish_events.append(torch.cuda.Event())
+        compute_finish_events[-1].record()
+
     if cp_size > 1 and procgrp is not None:
         with torch.cuda.stream(scomm), torch.cuda.nvtx.range('Prepare KV block exchange'):
             # Params ordered by allocation
@@ -85,15 +92,19 @@ def ring_sage_attention_exec(
             buffer_t = alloc_kv.allocated_buffer(alignment=4096)
 
             # Prepare the receiving buffer
-            # Receiving buffer will have its first dimension as (world_size-1).
-            buffer_pool_t = torch.empty((cp_size, *buffer_t.shape), dtype=torch.uint8, device=q_t.device)
+            buffer_remote_t = torch.empty_like(buffer_t)
 
         for ipeer in range(cp_size-1):
             with torch.cuda.stream(scomm), torch.cuda.nvtx.range('Exchange peer KV blocks'):
+                # Delayed event wait (Pingpong)
+                if len(compute_finish_events) > 1:
+                    compute_finish_events[0].wait()
+                    compute_finish_events.pop(0)
+
                 # Send to / receive from peer procs
                 req_r = dist.batch_isend_irecv([
                     dist.P2POp(dist.isend, buffer_t, send_to, group=procgrp),
-                    dist.P2POp(dist.irecv, buffer_pool_t[ipeer], recv_from, group=procgrp),
+                    dist.P2POp(dist.irecv, buffer_remote_t, recv_from, group=procgrp),
                 ])
                 [ r.wait() for r in req_r ]
 
@@ -102,7 +113,8 @@ def ring_sage_attention_exec(
                 ext_stream.wait_stream(scomm)
 
                 # Received buffer will be sent in the next iteration
-                buffer_t = buffer_pool_t[ipeer]
+                # Consumed buffer will be reused as receiving buffer
+                buffer_t, buffer_remote_t = buffer_remote_t, buffer_t
 
                 # Update params with the buffers just received
                 bit_pos = 0
@@ -130,6 +142,10 @@ def ring_sage_attention_exec(
                     tensor_layout="NHD",
                     sm_version=sm_version,
                 )
+
+                # Pin the event when each attention finishes
+                compute_finish_events.append(torch.cuda.Event())
+                compute_finish_events[-1].record()
 
                 # Scale & accumulate contributions from local & peer KV chunks
                 out1, out1_lse = _reaccum_o_according_to_lse(out1, out1_lse, out2, out2_lse)
