@@ -91,13 +91,11 @@ def ring_sage_attention_exec(
         for ipeer in range(cp_size-1):
             with torch.cuda.stream(scomm), torch.cuda.nvtx.range('Exchange peer KV blocks'):
                 # Send to / receive from peer procs
-                if cp_rank % 2 == 0:
-                    _ = dist.isend(buffer_t, send_to, group=procgrp)
-                    req_r = dist.irecv(buffer_pool_t[ipeer], recv_from, group=procgrp)
-                else:
-                    req_r = dist.irecv(buffer_pool_t[ipeer], recv_from, group=procgrp)
-                    _ = dist.isend(buffer_t, send_to, group=procgrp)
-                req_r.wait()
+                req_r = dist.batch_isend_irecv([
+                    dist.P2POp(dist.isend, buffer_t, send_to, group=procgrp),
+                    dist.P2POp(dist.irecv, buffer_pool_t[ipeer], recv_from, group=procgrp),
+                ])
+                [ r.wait() for r in req_r ]
 
             with torch.cuda.stream(ext_stream), torch.cuda.nvtx.range('Ring Attention remote chunks'):
                 # Wait for peer KV chunks
