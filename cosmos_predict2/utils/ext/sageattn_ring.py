@@ -155,7 +155,7 @@ def ring_sage_attention_exec(
                 # Compute contributions from peer KV chunks
                 # out2 will have shape (1, S, H, D)
                 out2_base = torch.empty_like(out1_base)
-                out2, out2_lse = sageattn_fp8_from_quantized(
+                out2, out2_lse = backend.attn(
                     q_t,
                     params['q_int8'],
                     params['q_scale'],
