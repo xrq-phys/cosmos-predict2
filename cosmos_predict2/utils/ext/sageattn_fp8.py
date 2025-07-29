@@ -2,6 +2,7 @@ from typing import Optional
 import torch
 import importlib
 from . import sageattn_quant
+from .cp_allocators import BaseAllocator
 
 _qattn = {}
 
@@ -25,7 +26,7 @@ def sageattn_fp8_quantize_all(
     qk_quant_gran: str = "per_thread",
     sm_scale: Optional[float] = None,
     pv_accum_dtype: str = "fp32+fp32",
-    alloc_kv: Optional[sageattn_quant.BaseAllocator] = None,
+    alloc_kv: Optional[BaseAllocator] = None,
     sm_version: int = 89,
 ) -> torch.Tensor:
 
@@ -36,7 +37,7 @@ def sageattn_fp8_quantize_all(
     assert q.device == k.device == v.device, "All tensors must be on the same device."
     assert q.dtype == k.dtype == v.dtype, "All tensors must have the same dtype."
     if alloc_kv is None:
-        alloc_kv = sageattn_quant.BaseAllocator()
+        alloc_kv = BaseAllocator()
 
     _tensor_layout = 0 if tensor_layout == "NHD" else 1
     _is_caual = 1 if is_causal else 0

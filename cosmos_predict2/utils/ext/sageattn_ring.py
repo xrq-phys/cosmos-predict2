@@ -1,12 +1,36 @@
 from typing import Optional, List
+from types import SimpleNamespace
+import importlib
 
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
+from .cp_allocators import FromPoolAllocator
 from .cp_comms import get_cp_procgrp, get_cp_stream, get_sm_version
-from .sageattn_fp8 import sageattn_fp8_quantize_all, sageattn_fp8_from_quantized
-from .sageattn_quant import FromPoolAllocator
 
+_sageattn_modules = SimpleNamespace()
+_sageattn_modules.sageattn = None
+_sageattn_modules.cutlass = None
+
+def _select_backend(sm_version):
+    if sm_version >= 100 and sm_version < 120:
+        if _sageattn_modules.cutlass is None:
+            module = importlib.import_module("cosmos_predict2.utils.ext.cutlass_fmha_interface")
+            _sageattn_modules.cutlass = SimpleNamespace(
+                module=module,
+                quant=module.cutlass_fmha_fp8_quantize_all,
+                attn=module.cutlass_fmha_fp8_from_quantized,
+            )
+        return _sageattn_modules.cutlass
+    else:
+        if _sageattn_modules.sageattn is None:
+            module = importlib.import_module("cosmos_predict2.utils.ext.sageattn_fp8")
+            _sageattn_modules.sageattn = SimpleNamespace(
+                module=module,
+                quant=module.sageattn_fp8_quantize_all,
+                attn=module.sageattn_fp8_from_quantized,
+            )
+        return _sageattn_modules.sageattn
 
 # Util function to perform weighted sum according to LSE
 # LSE tensors will have shape (1, H, S)
@@ -41,6 +65,9 @@ def ring_sage_attention_exec(
     cp_active = cp_size > 1 and cp_group is not None
     procgrp = get_cp_procgrp(cp_group) if cp_active else None
 
+    # Get backend module
+    backend = _select_backend(sm_version)
+
     # Determine the neighbouring nodes to send / receive tensors
     recv_from = (cp_rank + 1) % cp_size
     send_to = (cp_rank - 1 + cp_size) % cp_size
@@ -57,13 +84,13 @@ def ring_sage_attention_exec(
     with torch.cuda.stream(ext_stream), torch.cuda.nvtx.range('Ring Attention local chunks'):
         # Compute local components
         # out will have shape (1, S, H, D)
-        out1_base, params = sageattn_fp8_quantize_all(q_t, k_t, v_t, tensor_layout="NHD", alloc_kv=alloc_kv, sm_version=sm_version)
+        out1_base, params = backend.quant(q_t, k_t, v_t, tensor_layout="NHD", alloc_kv=alloc_kv, sm_version=sm_version)
 
         # Kick off communications after quantizing
         scomm.wait_stream(ext_stream)
 
         # Execute local part
-        out1, out1_lse = sageattn_fp8_from_quantized(
+        out1, out1_lse = backend.attn(
             q_t,
             params['q_int8'],
             params['q_scale'],
