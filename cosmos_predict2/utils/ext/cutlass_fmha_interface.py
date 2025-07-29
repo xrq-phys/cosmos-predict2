@@ -68,8 +68,10 @@ def cutlass_fmha_fp8_from_quantized(
     sm_version: int = 100,
 ):
     if tensor_layout.upper() == "NHD":
+        orig_seq_len = q.shape[1]
         lse_correction = torch.matmul(q.transpose(1, 2).to(torch.float32), k_mean.unsqueeze(-1)).squeeze(-1)
     elif tensor_layout.upper() == "HND":
+        orig_seq_len = q.shape[2]
         lse_correction = torch.matmul(q.to(torch.float32), k_mean.unsqueeze(-1)).squeeze(-1)
     else:
         raise RuntimeError(f"Unknown tensor layout: {tensor_layout}")
@@ -82,6 +84,10 @@ def cutlass_fmha_fp8_from_quantized(
 
     # The same default value was applied in cutlass::device
     softmax_scale = channels**-0.5
+
+    # For padded sequence
+    out = out[:, :orig_seq_len]
+    lse = lse[..., :orig_seq_len]
 
     if tensor_layout.upper() == "HND":
         out = out.transpose(1, 2)
