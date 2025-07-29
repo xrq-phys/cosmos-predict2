@@ -37,7 +37,7 @@ def cutlass_fmha_fp8_quantize_all(
 
 
     q_quant, k_quant, v_quant, q_scale, k_scale, v_scale, k_mean = \
-        sage_quant.sage_quant(runner, q, k, v, smooth=True, use_v_scale=False, result_allocator=alloc_kv)
+        sage_quant.sage_quant(runner, q, k, v, smooth=True, use_v_scale=False)
 
     return (
         torch.empty([0], dtype=dtype, device=q.device), # CUTLASS backend doesn't require pre-allocated output

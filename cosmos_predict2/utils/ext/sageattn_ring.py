@@ -20,6 +20,7 @@ def _select_backend(sm_version):
                 module=module,
                 quant=module.cutlass_fmha_fp8_quantize_all,
                 attn=module.cutlass_fmha_fp8_from_quantized,
+                from_pool_alloc=False,
             )
         return _sageattn_modules.cutlass
     else:
@@ -29,6 +30,7 @@ def _select_backend(sm_version):
                 module=module,
                 quant=module.sageattn_fp8_quantize_all,
                 attn=module.sageattn_fp8_from_quantized,
+                from_pool_alloc=True,
             )
         return _sageattn_modules.sageattn
 
@@ -116,7 +118,10 @@ def ring_sage_attention_exec(
             params_byte = { k: params[k].flatten().view(torch.uint8) for k in keys_to_exchange }
 
             # Contiguous memory to tranceive
-            buffer_t = alloc_kv.allocated_buffer(alignment=4096)
+            if backend.from_pool_alloc:
+                buffer_t = alloc_kv.allocated_buffer(alignment=4096)
+            else:
+                buffer_t = torch.cat([ params_byte[k] for k in keys_to_exchange ])
 
             # Prepare the receiving buffer
             buffer_remote_t = torch.empty_like(buffer_t)
