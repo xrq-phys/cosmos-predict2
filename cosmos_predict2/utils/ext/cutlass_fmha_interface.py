@@ -52,6 +52,14 @@ def cutlass_fmha_fp8_quantize_all(
         }
     )
 
+@torch.compile
+def compute_lse_correction_NHD(q, k_mean):
+    return torch.matmul(q.transpose(1, 2).to(torch.float32), k_mean.unsqueeze(-1)).squeeze(-1)
+
+@torch.compile
+def compute_lse_correction_HND(q, k_mean):
+    return torch.matmul(q.to(torch.float32), k_mean.unsqueeze(-1)).squeeze(-1)
+
 @torch.compiler.disable
 def cutlass_fmha_fp8_from_quantized(
     q: torch.Tensor,
@@ -69,10 +77,10 @@ def cutlass_fmha_fp8_from_quantized(
 ):
     if tensor_layout.upper() == "NHD":
         orig_seq_len = q.shape[1]
-        lse_correction = torch.matmul(q.transpose(1, 2).to(torch.float32), k_mean.unsqueeze(-1)).squeeze(-1)
+        lse_correction = compute_lse_correction_NHD(q, k_mean)
     elif tensor_layout.upper() == "HND":
         orig_seq_len = q.shape[2]
-        lse_correction = torch.matmul(q.to(torch.float32), k_mean.unsqueeze(-1)).squeeze(-1)
+        lse_correction = compute_lse_correction_HND(q, k_mean)
     else:
         raise RuntimeError(f"Unknown tensor layout: {tensor_layout}")
 
