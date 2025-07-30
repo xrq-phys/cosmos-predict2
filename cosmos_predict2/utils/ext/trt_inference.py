@@ -131,6 +131,7 @@ try:
     import natten
     from cosmos_predict2.utils.ext.natten_interface import NeighborhoodAttentionConfigs
     from cosmos_predict2.utils.ext.natten_a2a import a2a_netten_exec
+    from cosmos_predict2.utils.ext.natten_ring import ring_netten_exec
 
     natten.use_kv_parallelism_in_fused_na(True)
     natten.set_memory_usage_preference("unrestricted")
@@ -198,17 +199,26 @@ try:
             (window_size, stride, dilation, base_size)
         )
 
+        if True:
+            # A2A
+            op = a2a_netten_exec
+            input_T = T * cp_size1
+        else:
+            # Ring
+            op = ring_netten_exec
+            input_T = T
+
         natten_configuration = NeighborhoodAttentionConfigs.get_configuration(q_t)
         window_size_arg, stride_arg, dilation_arg, is_causal = NeighborhoodAttentionConfigs.get_adaptive_parameters(
             window_size=window_size_arg,
             stride=stride_arg,
             dilation=dilation_arg,
             is_causal=False,
-            input_shape=(T*cp_size1, H, W),
+            input_shape=(input_T, H, W),
             base_size=base_size_arg,
         )
 
-        out1 = a2a_netten_exec(
+        out1 = op(
             query=q_t,
             key=k_t,
             value=v_t,
