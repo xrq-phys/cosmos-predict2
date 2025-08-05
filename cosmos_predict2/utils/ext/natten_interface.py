@@ -136,6 +136,8 @@ class NeighborhoodAttentionRunner:
         dilation: DimensionTypeOrDed = 1,
         is_causal: Optional[CausalArgTypeOrDed] = False,
         scale: Optional[float] = None,
+        inv_scale_o: float = 1.0,
+        block_scaled_quantize: bool = False,
         attention_kwargs: Optional[Dict] = None,
         return_lse: bool = False,
         # Perf-related args
@@ -212,6 +214,8 @@ class NeighborhoodAttentionRunner:
                 dilation=dilation,
                 is_causal=is_causal,
                 scale=scale,
+                inv_scale_o=inv_scale_o,
+                block_scaled_quantize=block_scaled_quantize,
                 q_tile_shape=q_tile_shape,
                 kv_tile_shape=kv_tile_shape,
                 backward_q_tile_shape=backward_q_tile_shape,
@@ -221,6 +225,7 @@ class NeighborhoodAttentionRunner:
             )
 
         elif backend == "hopper-fna":
+            assert inv_scale_o == 1.0, "Hopper FNA doesn't support output-scaling"
             outputs = cutlass_hopper_fna_generic(
                 query=query,
                 key=key,
@@ -239,6 +244,7 @@ class NeighborhoodAttentionRunner:
             )
 
         elif backend == "cutlass-fna":
+            assert inv_scale_o == 1.0, "Generic CUTLASS FNA doesn't support output-scaling"
             outputs = cutlass_fna_generic(
                 query=query,
                 key=key,
@@ -258,6 +264,7 @@ class NeighborhoodAttentionRunner:
             )
 
         elif backend == "flex-fna":
+            assert inv_scale_o == 1.0, "Flex FNA doesn't support output-scaling"
             outputs = flex_fna_generic(
                 query=query,
                 key=key,

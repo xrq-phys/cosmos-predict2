@@ -10,6 +10,28 @@ from imaginaire.utils import log
 from cosmos_predict2.utils.ext import trt_inference
 
 
+def find_subsequent_quantization_scale(graph, node):
+    max_dig_down = 10
+    subsequent_node = node
+    for _ in range(max_dig_down):
+        log.info(f"Searching for quantization node from: {subsequent_node.op}")
+        subsequent_nodes = [ n for n in graph.nodes if subsequent_node.outputs[0] in n.inputs ]
+        if len(subsequent_nodes) > 1:
+            raise ValueError(f"Multiple subsequent nodes found for {node.op} output without any quantization. "
+                                "Was this graph exported with --modelopt_state?")
+        if len(subsequent_nodes) == 0:
+            raise ValueError("Output of {node.op} is not consumed by any node. Graph is invalid.")
+        subsequent_node = subsequent_nodes[0]
+        if subsequent_node.op == "TRT_FP8QuantizeLinear":
+            break
+    if subsequent_node.op != "TRT_FP8QuantizeLinear":
+        raise ValueError(f"No quantization layer found within {max_dig_down} nodes after {node.op}. "
+                            "Was this graph exported with --modelopt_state?")
+    oproj_quant_scale_v = subsequent_node.inputs[1]
+    oproj_quant_const_node = [ n for n in graph.nodes if n.outputs[0] == oproj_quant_scale_v ][0]
+    assert oproj_quant_const_node.op == "Constant"
+    return oproj_quant_const_node.attrs["value"].values
+
 def is_default_domain(node):
     return node.domain is None or node.domain == "" or "onnx" in node.domain
 
@@ -26,6 +48,7 @@ def build_dit_block_from_onnx(
     fix_T=None,
     fix_H=None,
     fix_W=None,
+    block_index=0,
     use_fp8_context_fmha=True,
 ):
     if trt_builder is None:
@@ -179,115 +202,47 @@ def build_dit_block_from_onnx(
 
             # Setups for GPTAttention
             if node.op == "GPTAttention":
-                # Before GPTAttention:
-                # First, find the subsequent quantization layer to get the output scale
-                if use_fp8_context_fmha:
-                    max_dig_down = 10
-                    subsequent_node = node
-                    for _ in range(max_dig_down):
-                        log.info(f"Searching for quantization node from: {subsequent_node.op}")
-                        subsequent_nodes = [ n for n in onnx_graph.nodes if subsequent_node.outputs[0] in n.inputs ]
-                        if len(subsequent_nodes) > 1:
-                            raise ValueError("Multiple subsequent nodes found for GPTAttention output without any quantization. "
-                                             "Was this graph exported with --modelopt_state?")
-                        if len(subsequent_nodes) == 0:
-                            raise ValueError("Output of GPTAttention is not consumed by any node. Graph is invalid.")
-                        subsequent_node = subsequent_nodes[0]
-                        if subsequent_node.op == "TRT_FP8QuantizeLinear":
-                            break
-                    if subsequent_node.op != "TRT_FP8QuantizeLinear":
-                        raise ValueError(f"No quantization layer found within {max_dig_down} nodes after GPTAttention. "
-                                         "Was this graph exported with --modelopt_state?")
-                    oproj_quant_scale_v = subsequent_node.inputs[1]
-                    oproj_quant_const_node = [ n for n in onnx_graph.nodes if n.outputs[0] == oproj_quant_scale_v ][0]
-                    assert oproj_quant_const_node.op == "Constant"
-
-                    # Add that scale to GPTAttention's input
-                    attn_out_dequant_scale_val = oproj_quant_const_node.attrs["value"].values
-                    log.info(f"Quantization scale: {attn_out_dequant_scale_val}")
-                    attn_out_quant_scale_c = gs.Constant(name=f"GPTAttention{inode}/out/quant/const",
-                                                         values=np.array(np.reciprocal(attn_out_dequant_scale_val)))
-                    attn_out_quant_scale_v = gs.Variable(name=f"GPTAttention{inode}/out/quant/var")
-                    onnx_graph.nodes.append(gs.Node(op="Constant",
-                                                    name=f"GPTAttention{inode}/out/quant/node",
-                                                    outputs=[attn_out_quant_scale_v],
-                                                    attrs={"value": attn_out_quant_scale_c}))
-
-                    # If CP is enabled, try to do quantization from TRT instead of GPTAttention
-                    if cp_size > 1:
-                        attn_in_cast_out = gs.Variable(name=f"GPTAttention{inode}/in/cast/out")
-                        onnx_graph.nodes.append(gs.Node(op="Cast",
-                                                        name=f"GPTAttention{inode}/in/cast/op",
-                                                        inputs=[node.inputs[0]],
-                                                        outputs=[attn_in_cast_out],
-                                                        attrs={"to": onnx.TensorProto.FLOAT}))
-
-                        unit_scale = np.array(1.0, dtype=np.float32)
-                        attn_in_quant_scale_c = gs.Constant(name=f"GPTAttention{inode}/in/quant/const",
-                                                            values=unit_scale)
-                        attn_in_quant_scale_v = gs.Variable(name=f"GPTAttention{inode}/in/quant/var")
-                        onnx_graph.nodes.append(gs.Node(op="Constant",
-                                                        name=f"GPTAttention{inode}/in/quant/node",
-                                                        outputs=[attn_in_quant_scale_v],
-                                                        attrs={"value": attn_in_quant_scale_c}))
-                        attn_in_quant_out = gs.Variable(name=f"GPTAttention{inode}/in/quant/out")
-                        onnx_graph.nodes.append(gs.Node(op="TRT_FP8QuantizeLinear",
-                                                        name=f"GPTAttention{inode}/in/quant/op",
-                                                        domain="trt",
-                                                        inputs=[attn_in_cast_out, attn_in_quant_scale_v],
-                                                        outputs=[attn_in_quant_out]))
-                        node.inputs[0] = attn_in_quant_out
-
-                # At GPTAttention:
-                # Supplimentary tensors in order
-                node.inputs.append(host_max_attention_window)    # IdxEntry::HOST_MAX_ATTENTION_WINDOW
-                node.inputs.append(host_sink_token_length)       # IdxEntry::HOST_SINK_TOKEN_LENGTH
-                node.inputs.append(context_lengths)              # IdxEntry::CONTEXT_LENGTHS
-                node.inputs.append(host_request_types)           # IdxEntry::REQUEST_TYPES
-                if use_fp8_context_fmha:
-                    node.inputs.append(attn_out_quant_scale_v)   # IdxEntry::ATTENTION_OUTPUT_QUANTIZATION_SCALE
-                node.inputs.append(host_context_length)          # IdxEntry::HOST_CONTEXT_LENGTH
-                node.inputs.append(host_runtime_perf_knobs)      # IdxEntry::HOST_RUNTIME_PERF_KNOBS: Judged `USED` from attributes, but is optional.
-                node.inputs.append(host_context_progress)        # IdxEntry::HOST_CONTEXT_PROGRESS: Judged `USED` from attributes, but is optional.
-
-                # Enable FP8 quantization
-                node.attrs["use_fp8_context_fmha"] = use_fp8_context_fmha
-                node.attrs["skip_preprocess"] = use_fp8_context_fmha and cp_size > 1
-
-                # CP metadata are attributes
-                node.attrs["cp_size"] = cp_size
-                node.attrs["cp_rank"] = cp_rank
-                node.attrs["cp_group"] = cp_group
-
-                # After GPTAttention:
-                # Add dequantization layer
-                if use_fp8_context_fmha:
-                    attn_out_dequant_scale_c = gs.Constant(name=f"GPTAttention{inode}/out/dequant/const",
-                                                           values=attn_out_dequant_scale_val)
-                    attn_out_dequant_scale_v = gs.Variable(name=f"GPTAttention{inode}/out/dequant/var")
-                    onnx_graph.nodes.append(gs.Node(op="Constant",
-                                                    name=f"GPTAttention{inode}/out/dequant/node",
-                                                    outputs=[attn_out_dequant_scale_v],
-                                                    attrs={"value": attn_out_dequant_scale_c}))
-                    attn_out_dequant_out = gs.Variable(name=f"GPTAttention{inode}/out/dequant/out")
-                    attn_out_dequant = gs.Node(op="TRT_FP8DequantizeLinear",
-                                               name=f"GPTAttention{inode}/out/dequant/op",
-                                               domain="trt",
-                                               inputs=[node.outputs[0], attn_out_dequant_scale_v],
-                                               outputs=[attn_out_dequant_out])
-                    for n in onnx_graph.nodes:
-                        for i in range(len(n.inputs)):
-                            if n.inputs[i] == node.outputs[0]:
-                                n.inputs[i] = attn_out_dequant_out
-                    onnx_graph.nodes.append(attn_out_dequant)
+                raise NotImplementedError("GPTAttention support removed. Please use RingSageAttentionFusedQKV")
 
         if node.domain == "Cosmos" and node.op == "NeighborhoodAttention":
+            # Before NATTEN:
+            # Find the subsequent quantization layer to get the output scale
+            attn_out_dequant_scale_val = find_subsequent_quantization_scale(onnx_graph, node)
+            attn_scale_o = attn_out_dequant_scale_val.tolist()
+            if isinstance(attn_scale_o, list):
+                attn_scale_o = attn_scale_o[0]
+
             assert len(node.inputs) == 3, "Where are our Q, K, and V?"
             node.inputs.append(context_lengths)
             node.inputs.append(host_video_size)
             node.inputs.append(host_cp_size)
             node.inputs.append(host_cp_rank)
             node.inputs.append(host_cp_group)
+            node.attrs["block_index"] = block_index
+            node.attrs["use_quantization"] = int(use_fp8_context_fmha)
+            node.attrs["inv_scale_o"] = 1.0 / attn_scale_o
+
+            # After NATTEN:
+            # Add dequantization layer
+            if use_fp8_context_fmha:
+                attn_out_dequant_scale_c = gs.Constant(name=f"NATTEN{inode}/out/dequant/const",
+                                                       values=attn_out_dequant_scale_val)
+                attn_out_dequant_scale_v = gs.Variable(name=f"NATTEN{inode}/out/dequant/var")
+                onnx_graph.nodes.append(gs.Node(op="Constant",
+                                                name=f"NATTEN{inode}/out/dequant/node",
+                                                outputs=[attn_out_dequant_scale_v],
+                                                attrs={"value": attn_out_dequant_scale_c}))
+                attn_out_dequant_out = gs.Variable(name=f"NATTEN{inode}/out/dequant/out")
+                attn_out_dequant = gs.Node(op="TRT_FP8DequantizeLinear",
+                                           name=f"NATTEN{inode}/out/dequant/op",
+                                           domain="trt",
+                                           inputs=[node.outputs[0], attn_out_dequant_scale_v],
+                                           outputs=[attn_out_dequant_out])
+                for n in onnx_graph.nodes:
+                    for i in range(len(n.inputs)):
+                        if n.inputs[i] == node.outputs[0]:
+                            n.inputs[i] = attn_out_dequant_out
+                onnx_graph.nodes.append(attn_out_dequant)
 
         if node.domain == "Cosmos" and node.op in ["QSmoothFactor", "KSmoothFactor"]:
             node.attrs["cp_size"] = cp_size

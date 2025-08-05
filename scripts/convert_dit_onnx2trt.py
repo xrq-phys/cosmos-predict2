@@ -8,6 +8,10 @@ import tensorrt as trt
 from imaginaire.utils import log
 from cosmos_predict2.utils.ext import trt_inference
 from cosmos_predict2.utils.ext.dit_block_onnx2trt import build_dit_block_from_onnx
+from cosmos_predict2.configs.base.config_video2world import (
+    PREDICT2_VIDEO2WORLD_NET_2B,
+    PREDICT2_VIDEO2WORLD_NET_14B,
+)
 
 
 def main():
@@ -36,13 +40,17 @@ def convert_dit_onnx2trt(args):
     trt_builder = trt.Builder(trt_inference._trt_logger)
     trt_runtime = trt.Runtime(trt_inference._trt_logger)
 
-    # SelfAttn head count & dimension of all heads
+    # Get config
     if args.model_size == "2B":
-        HS, D = 16, 128
+        dit_config = PREDICT2_VIDEO2WORLD_NET_2B
     elif args.model_size == "14B":
-        HS, D = 40, 128
+        dit_config = PREDICT2_VIDEO2WORLD_NET_14B
     else:
         raise ValueError(f"Unsupported model size: {args.model_size}")
+
+    # SelfAttn head count & dimension of all heads
+    HS = dit_config.num_heads
+    D = dit_config.model_channels // HS
 
     N, HX = 512, 8 # CrossAttn seq len & head count
 
@@ -55,7 +63,11 @@ def convert_dit_onnx2trt(args):
     else:
         raise ValueError(f"Unsupported resolution: {args.resolution}")
 
-    for onnx_file in glob.glob(f"{args.onnx_prefix}/cosmos_predict2_dit_net_block*.onnx"):
+    for block_index in range(dit_config.num_blocks):
+
+        # File
+
+        onnx_file = f"{args.onnx_prefix}/cosmos_predict2_dit_net_block{block_index}.onnx"
 
         # Args
 
@@ -82,7 +94,8 @@ def convert_dit_onnx2trt(args):
                                                       trt_builder=trt_builder,
                                                       optimization_level=args.optimize,
                                                       lo_res=args.resolution == "480",
-                                                      oss_sageattn=ring_attn)
+                                                      oss_sageattn=ring_attn,
+                                                      block_index=block_index)
         with open(engine_file, "wb") as f:
             f.write(engine_serialized)
         log.info(f"Saved TRT engine {engine_file}")

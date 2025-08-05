@@ -71,6 +71,13 @@ def _recast(t):
         t_.dtype = trt.DataType.HALF
         t_._immutable = True
         return torch.as_tensor(t_, device='cuda').view(torch.bfloat16)
+    elif t.dtype == trt.DataType.FP8:
+        # torch.as_tensor would fail inferring FP8 from __cuda_array_interface__ due to lack of such support in NumPy
+        # have to manually workaround dtype
+        t_._immutable = False
+        t_.dtype = trt.DataType.INT8
+        t_._immutable = True
+        return torch.as_tensor(t_, device='cuda').view(torch.float8_e4m3fn)
     else:
         return torch.as_tensor(t_, device='cuda')
 
@@ -150,11 +157,20 @@ try:
         stride : NDArray[np.int32],
         dilation : NDArray[np.int32],
         base_size : NDArray[np.int32],
+        block_index : int,
+        use_quantization : int,
+        inv_scale_o : float,
     ) -> trtp.TensorDesc:
         out_desc = q.like()
+        if use_quantization > 0:
+            out_desc.dtype = trt.DataType.FP8
         batch, max_seq, num_heads, head_dim = q.shape_expr
         out_desc.shape_expr = [batch, max_seq, num_heads * head_dim]
         return out_desc
+
+    @torch.compile
+    def natten_cast_out(out, result):
+        out.copy_(result.to(out.dtype))
 
     @trtp.impl("Cosmos::NeighborhoodAttention")
     def natten_plugin_v3_impl(
@@ -170,6 +186,9 @@ try:
         stride : NDArray[np.int32],
         dilation : NDArray[np.int32],
         base_size : NDArray[np.int32],
+        block_index : int,
+        use_quantization : int,
+        inv_scale_o : float,
         outputs : Tuple[trtp.Tensor],
         stream : int
     ):
@@ -178,6 +197,12 @@ try:
         cp_rank1 = np.ctypeslib.as_array(ctypes.c_int.from_address(host_cp_rank.data_ptr)).item()
         cp_group72 = np.ctypeslib.as_array((ctypes.c_int * cp_size1).from_address(host_cp_group.data_ptr)).tolist()
         ext_stream = torch.cuda.ExternalStream(stream)
+        block_scaled_quantize = use_quantization > 0
+
+        # DEBUG
+        WHITELISTED_LAYERS = list(range(6, 10)) + list(range(11, 16)) # + [23]
+        if block_index not in WHITELISTED_LAYERS:
+            block_scaled_quantize = False
 
         def _convert_natten_args(arg: NDArray[np.int32]):
             arg_l = arg.tolist()
@@ -230,12 +255,14 @@ try:
             stride=stride_arg,
             dilation=dilation_arg,
             is_causal=is_causal,
+            inv_scale_o=inv_scale_o,
+            block_scaled_quantize=block_scaled_quantize,
             **natten_configuration,
         )
         out1 = out1.flatten(1, 3).flatten(-2)
 
         with torch.cuda.stream(ext_stream):
-            out_t.copy_(out1)
+            natten_cast_out(out_t, out1)
 
 except Exception as e:
     log.warning(f"Cannot create NeighborhoodAttention plugin: {e}")
