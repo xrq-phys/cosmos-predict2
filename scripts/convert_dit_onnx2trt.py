@@ -95,7 +95,8 @@ def convert_dit_onnx2trt(args):
                                                       optimization_level=args.optimize,
                                                       lo_res=args.resolution == "480",
                                                       oss_sageattn=ring_attn,
-                                                      block_index=block_index)
+                                                      block_index=block_index,
+                                                      use_fp8_context_fmha=False) # Only affects NATTEN
         with open(engine_file, "wb") as f:
             f.write(engine_serialized)
         log.info(f"Saved TRT engine {engine_file}")
