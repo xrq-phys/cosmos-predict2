@@ -76,12 +76,6 @@ def convert_dit_onnx2trt(args):
         if args.auto:
             cc_major, cc_minor = torch.cuda.get_device_capability()
 
-            # Attn backend
-            if cc_major == 12 or (cc_major, cc_minor) == (8, 9) or cc_major == 9:
-                ring_attn = True
-            else:
-                raise NotImplementedError("TODO: Add NATTEN PluginV3")
-
             # Engine file
             engine_file_dirs = engine_file.split('/')
             engine_file_dirs[-2] += f'.sm{cc_major}{cc_minor}'
