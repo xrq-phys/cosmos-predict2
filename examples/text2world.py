@@ -130,6 +130,12 @@ def parse_args() -> argparse.Namespace:
         "--offload_prompt_refiner", action="store_true", help="Offload prompt refiner to CPU to save GPU memory"
     )
     parser.add_argument(
+        "--offload_text_encoder", action="store_true", help="Offload text encoder to CPU to save GPU memory"
+    )
+    parser.add_argument(
+        "--downcast_text_encoder", action="store_true", help="Cast text encoder from checkpoint precision to pipeline precision"
+    )
+    parser.add_argument(
         "--natten",
         action="store_true",
         help="Run the sparse attention variant (with NATTEN).",
