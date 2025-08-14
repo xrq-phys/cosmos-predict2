@@ -277,6 +277,12 @@ def parse_args():
     parser.add_argument(
         "--offload_prompt_refiner", action="store_true", help="Offload prompt refiner to CPU to save GPU memory"
     )
+    parser.add_argument(
+        "--offload_text_encoder", action="store_true", help="Offload text encoder to CPU to save GPU memory"
+    )
+    parser.add_argument(
+        "--downcast_text_encoder", action="store_true", help="Cast text encoder from checkpoint precision to pipeline precision"
+    )
     # GR00T-specific settings. Specify --gr00t_variant to enable
     parser.add_argument("--gr00t_variant", type=str, default="", help="GR00T variant to use", choices=["gr1", "droid"])
     parser.add_argument(
