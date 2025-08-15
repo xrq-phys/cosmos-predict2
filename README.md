@@ -13,6 +13,7 @@ We visualize the architecture of Cosmos-Predict2 in the following figure.
 </p>
 
 ## News
+* 2025-08-15: We released the [0.6B Text2Image](documentations/inference_text2image.md) model with fast tokenizer support!
 * 2025-07-10: We released [Predict2 + NATTEN](documentations/performance.md#sparse-attention-powered-by-natten), bringing up to 2.6X end-to-end inference speedup with sparse attention ([Video](https://www.youtube.com/watch?v=o396JZsz4V4)).
 * 2025-06-11: We released post-training and inference code, along with model weights. For a code walkthrough, please see this [video](https://www.youtube.com/watch?v=ibnVm6hPtxA).
 
