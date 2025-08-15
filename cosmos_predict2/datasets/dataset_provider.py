@@ -56,13 +56,13 @@ def get_video_dataset(
     assert resolution in VIDEO_RES_SIZE_INFO.keys(), "The provided resolution cannot be found in VIDEO_RES_SIZE_INFO."
     basic_augmentor_names = ["video_basic_augmentor_v2", "video_basic_augmentor_v2_with_edge_control"]
     if video_decoder_name == "video_naive_bytes":
-        assert (
-            augmentor_name in basic_augmentor_names
-        ), "We can only use video_basic_augmentor_v2 with video_naive_bytes decoder."
+        assert augmentor_name in basic_augmentor_names, (
+            "We can only use video_basic_augmentor_v2 with video_naive_bytes decoder."
+        )
     if augmentor_name in basic_augmentor_names:
-        assert (
-            video_decoder_name == "video_naive_bytes"
-        ), "We can only use video_naive_bytes decoder with video_basic_augmentor_v2."
+        assert video_decoder_name == "video_naive_bytes", (
+            "We can only use video_naive_bytes decoder with video_basic_augmentor_v2."
+        )
 
     dataset_info_fn = DATASET_OPTIONS[dataset_name]
     dataset_info = dataset_info_fn("", caption_type, embedding_type)

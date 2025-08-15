@@ -70,7 +70,7 @@ class Predict2Video2WorldModelConfig:
                 log.warning(f"High LoRA rank ({self.lora_rank}) may reduce training efficiency")
             if self.lora_alpha != self.lora_rank:
                 log.info(
-                    f"LoRA alpha ({self.lora_alpha}) != rank ({self.lora_rank}), scaling factor: {self.lora_alpha/self.lora_rank}"
+                    f"LoRA alpha ({self.lora_alpha}) != rank ({self.lora_rank}), scaling factor: {self.lora_alpha / self.lora_rank}"
                 )
 
     input_video_key: str = "video"
@@ -314,7 +314,7 @@ class Predict2Video2WorldModel(ImaginaireModel):
                 param.data = param.to(torch.float32)
 
         log.info(
-            f"LoRA injection successful: {lora_params:,} trainable parameters out of {total_params:,} total ({100*lora_params/total_params:.3f}%)"
+            f"LoRA injection successful: {lora_params:,} trainable parameters out of {total_params:,} total ({100 * lora_params / total_params:.3f}%)"
         )
 
     def _log_lora_statistics(self) -> None:
@@ -348,9 +348,9 @@ class Predict2Video2WorldModel(ImaginaireModel):
         """
         is_image = self.input_image_key in data_batch
         is_video = self.input_video_key in data_batch
-        assert (
-            is_image != is_video
-        ), "Only one of the input_image_key or input_video_key should be present in the data_batch."
+        assert is_image != is_video, (
+            "Only one of the input_image_key or input_video_key should be present in the data_batch."
+        )
         return is_image
 
     def _update_train_stats(self, data_batch: dict[str, torch.Tensor]) -> None:

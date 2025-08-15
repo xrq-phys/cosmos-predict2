@@ -12,6 +12,7 @@
 # dir@exchange.nvidia.com.
 # -----------------------------------------------------------------------------
 
+from collections.abc import Mapping
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -24,16 +25,16 @@ from torch.distributed._composable.fsdp import fully_shard
 from torchvision import transforms
 
 from cosmos_predict2.conditioner import DataType
-from cosmos_predict2.models.video2world_dit import MinimalV1LVGDiT
 from cosmos_predict2.models.text2image_dit import (
     Attention,
     Block,
     SACConfig,
     VideoRopePosition3DEmb,
 )
+from cosmos_predict2.models.video2world_dit import MinimalV1LVGDiT
 from cosmos_predict2.utils.context_parallel import split_inputs_cp
-from collections.abc import Mapping
 from imaginaire.utils import log
+
 
 class MultiViewCrossAttention(Attention):
     def __init__(self, *args, state_t: int = None, **kwargs) -> None:
@@ -71,12 +72,26 @@ class MultiViewBlock(Block):
         state_t: int = None,
     ):
         super().__init__(
-            x_dim, context_dim, num_heads, mlp_ratio, use_adaln_lora, adaln_lora_dim, self_attention_backend, cross_attention_backend, natten_params
+            x_dim,
+            context_dim,
+            num_heads,
+            mlp_ratio,
+            use_adaln_lora,
+            adaln_lora_dim,
+            self_attention_backend,
+            cross_attention_backend,
+            natten_params,
         )
         self.state_t = state_t
         del self.cross_attn
         self.cross_attn = MultiViewCrossAttention(
-            x_dim, context_dim, num_heads, x_dim // num_heads, qkv_format="bshd", state_t=state_t, backend=cross_attention_backend
+            x_dim,
+            context_dim,
+            num_heads,
+            x_dim // num_heads,
+            qkv_format="bshd",
+            state_t=state_t,
+            backend=cross_attention_backend,
         )
 
 
@@ -142,6 +157,7 @@ def get_1d_sincos_pos_embed_from_grid(embed_dim, pos):
     emb = np.concatenate([emb_sin, emb_cos], axis=1)  # (M, D)
     return emb
 
+
 class MultiViewDiT(MinimalV1LVGDiT):
     def __init__(
         self,
@@ -166,7 +182,12 @@ class MultiViewDiT(MinimalV1LVGDiT):
             self.view_condition_dim if self.concat_view_embedding else 0
         )  # this avoids overwritting build_patch_embed which still adds padding_mask channel as appropriate
         super().__init__(
-            *args, mlp_ratio=mlp_ratio, crossattn_emb_channels=crossattn_emb_channels, sac_config=sac_config, natten_parameters=natten_parameters, **kwargs
+            *args,
+            mlp_ratio=mlp_ratio,
+            crossattn_emb_channels=crossattn_emb_channels,
+            sac_config=sac_config,
+            natten_parameters=natten_parameters,
+            **kwargs,
         )
         del self.blocks
         self.blocks = nn.ModuleList(
@@ -178,7 +199,9 @@ class MultiViewDiT(MinimalV1LVGDiT):
                     mlp_ratio=mlp_ratio,
                     use_adaln_lora=self.use_adaln_lora,
                     adaln_lora_dim=self.adaln_lora_dim,
-                    self_attention_backend=self.atten_backend if natten_parameters is None or natten_parameters[i] is None else "natten",
+                    self_attention_backend=self.atten_backend
+                    if natten_parameters is None or natten_parameters[i] is None
+                    else "natten",
                     cross_attention_backend=self.atten_backend,
                     natten_params=None if natten_parameters is None else natten_parameters[i],
                     state_t=self.state_t,
@@ -255,7 +278,6 @@ class MultiViewDiT(MinimalV1LVGDiT):
 
         self.final_layer.init_weights()
         self.t_embedding_norm.reset_parameters()
-
 
     def build_pos_embed(self):
         self.pos_embedder_options = nn.ModuleDict()
@@ -384,9 +406,9 @@ class MultiViewDiT(MinimalV1LVGDiT):
                 [x_B_C_T_H_W, torch.zeros((B, 1, T, H, W), dtype=x_B_C_T_H_W.dtype, device=x_B_C_T_H_W.device)], dim=1
             )
 
-        assert isinstance(
-            data_type, DataType
-        ), f"Expected DataType, got {type(data_type)}. We need discuss this flag later."
+        assert isinstance(data_type, DataType), (
+            f"Expected DataType, got {type(data_type)}. We need discuss this flag later."
+        )
         x_B_T_H_W_D, rope_emb_L_1_1_D, extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D = self.prepare_embedded_sequence(
             x_B_C_T_H_W,
             fps=fps,
@@ -407,9 +429,9 @@ class MultiViewDiT(MinimalV1LVGDiT):
         self.crossattn_emb = crossattn_emb
 
         if extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D is not None:
-            assert (
-                x_B_T_H_W_D.shape == extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D.shape
-            ), f"{x_B_T_H_W_D.shape} != {extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D.shape}"
+            assert x_B_T_H_W_D.shape == extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D.shape, (
+                f"{x_B_T_H_W_D.shape} != {extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D.shape}"
+            )
 
         B, T, H, W, D = x_B_T_H_W_D.shape
 

@@ -173,7 +173,7 @@ python examples/text2image.py \
   --save_path output/generated_image_2b_teal_robot_ema.jpg
 ```
 
-See [documentations/inference_text2image.md](documentations/inference_text2image.md) for inference run details.
+See [documentations/inference_text2image.md](./inference_text2image.md) for inference run details.
 
 ##### Cosmos-Predict2-14B-Text2Image
 

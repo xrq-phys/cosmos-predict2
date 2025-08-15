@@ -394,7 +394,7 @@ def split_videos(
     print("Split summary:")
     print(f"  - Total videos processed: {total_videos}")
     print(f"  - Total windows created: {total_windows}")
-    print(f"  - Average windows per video: {total_windows/total_videos:.1f}" if total_videos > 0 else "N/A")
+    print(f"  - Average windows per video: {total_windows / total_videos:.1f}" if total_videos > 0 else "N/A")
     print(f"  - Output directory for training: {output_dir_train}")
     print(f"  - Output directory for validation: {output_dir_val}")
     print("-" * 50)

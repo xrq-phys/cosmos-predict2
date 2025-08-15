@@ -15,24 +15,27 @@
 
 from hydra.core.config_store import ConfigStore
 
+from cosmos_predict2.configs.base.config_multiview import PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES
 from cosmos_predict2.configs.base.config_text2image import (
     PREDICT2_TEXT2IMAGE_PIPELINE_2B,
     PREDICT2_TEXT2IMAGE_PIPELINE_14B,
 )
-from cosmos_predict2.configs.base.config_video2world import PREDICT2_VIDEO2WORLD_PIPELINE_2B  # 720p, 16fps
-from cosmos_predict2.configs.base.config_video2world import PREDICT2_VIDEO2WORLD_PIPELINE_14B  # 720p, 16fps
 from cosmos_predict2.configs.base.config_video2world import (
+    PREDICT2_VIDEO2WORLD_PIPELINE_2B,  # 720p, 16fps
     PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_10FPS,
     PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_16FPS,
     PREDICT2_VIDEO2WORLD_PIPELINE_2B_720P_10FPS,
     PREDICT2_VIDEO2WORLD_PIPELINE_2B_720P_16FPS,
+    PREDICT2_VIDEO2WORLD_PIPELINE_14B,  # 720p, 16fps
     PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_10FPS,
     PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_16FPS,
     PREDICT2_VIDEO2WORLD_PIPELINE_14B_720P_10FPS,
     PREDICT2_VIDEO2WORLD_PIPELINE_14B_720P_16FPS,
 )
-from cosmos_predict2.configs.base.config_multiview import PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES
-
+from cosmos_predict2.models.multiview_model import (
+    Predict2MultiviewModel,
+    Predict2MultiviewModelConfig,
+)
 from cosmos_predict2.models.text2image_model import (
     Predict2Text2ImageModel,
     Predict2Text2ImageModelConfig,
@@ -42,11 +45,6 @@ from cosmos_predict2.models.video2world_model import (
     Predict2Video2WorldModel,
     Predict2Video2WorldModelConfig,
 )
-from cosmos_predict2.models.multiview_model import (
-    Predict2MultiviewModel,
-    Predict2MultiviewModelConfig,
-)
-
 from imaginaire.lazy_config import LazyCall as L
 
 # 2b model config for predict2 text2image

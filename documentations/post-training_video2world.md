@@ -20,12 +20,12 @@ Before running training:
 Cosmos-Predict2 provides two models for generating videos from a combination of text and visual inputs: `Cosmos-Predict2-2B-Video2World` and `Cosmos-Predict2-14B-Video2World`. These models can transform a still image or video clip into a longer, animated sequence guided by the text description.
 
 We support post-training the models with example datasets.
-- [post-training_video2world_cosmos_nemo_assets](/documentations/post-training_video2world_cosmos_nemo_assets.md)
+- [post-training_video2world_cosmos_nemo_assets](./post-training_video2world_cosmos_nemo_assets.md)
   - Basic examples with a small 4 videos dataset
-- [post-training_video2world_agibot_fisheye](/documentations/post-training_video2world_agibot_fisheye.md)
+- [post-training_video2world_agibot_fisheye](./post-training_video2world_agibot_fisheye.md)
   - Examples with fisheye-view dataset
   - Post-training from checkpoints with resolution & fps choices
-- [post-training_video2world_gr00t](/documentations/post-training_video2world_gr00t.md)
+- [post-training_video2world_gr00t](./post-training_video2world_gr00t.md)
   - Examples with GR00T-dreams datasets
 ## Post-training Guide
 
@@ -274,7 +274,7 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python examples/video2world.py \
   --save_path output/cosmos_nemo_assets/generated_video_from_post-training.mp4
 ```
 
-See [documentations/inference_video2world.md](documentations/inference_video2world.md) for inference run details.
+See [documentations/inference_video2world.md](./inference_video2world.md) for inference run details.
 
 ##### Cosmos-Predict2-14B-Video2World
 

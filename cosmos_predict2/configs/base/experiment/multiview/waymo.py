@@ -17,10 +17,10 @@ from hydra.core.config_store import ConfigStore
 from megatron.core import parallel_state
 from torch.utils.data import DataLoader, DistributedSampler
 
-from cosmos_predict2.data.dataset_multiview import MultiviewDataset
-from cosmos_predict2.conditioner import ConditionLocation
-from imaginaire.lazy_config import LazyCall as L
 from cosmos_predict2.callbacks.every_n_draw_sample_multiviewvideo import EveryNDrawSampleMultiviewVideo
+from cosmos_predict2.conditioner import ConditionLocation
+from cosmos_predict2.data.dataset_multiview import MultiviewDataset
+from imaginaire.lazy_config import LazyCall as L
 
 
 def get_sampler(dataset):
@@ -35,13 +35,13 @@ def get_sampler(dataset):
 
 cs = ConfigStore.instance()
 
-camera_keys = ["pinhole_side_left", "pinhole_front_left", "pinhole_front", "pinhole_front_right",  "pinhole_side_right"]
+camera_keys = ["pinhole_side_left", "pinhole_front_left", "pinhole_front", "pinhole_front_right", "pinhole_side_right"]
 camera_to_view_id = {
     "pinhole_front": 0,
     "pinhole_front_left": 5,
     "pinhole_front_right": 1,
     "pinhole_side_left": 4,
-    "pinhole_side_right": 2
+    "pinhole_side_right": 2,
 }
 
 example_video_dataset_waymo5views_720p_train = L(MultiviewDataset)(
@@ -134,7 +134,6 @@ dataloader_val_waymo5views_480p = L(DataLoader)(
 )
 
 
-
 # torchrun --nproc_per_node=8 --master_port=12341 -m scripts.train --config=cosmos_predict2/configs/base/config.py -- experiment=predict2_multiview_training_2b_720p_10fps_7views_29frames_waymo5views
 predict2_multiview_training_2b_720p_10fps_7views_29frames_waymo5views = dict(
     defaults=[
@@ -152,7 +151,7 @@ predict2_multiview_training_2b_720p_10fps_7views_29frames_waymo5views = dict(
     model=dict(
         config=dict(
             pipe_config=dict(
-                state_t = 8,
+                state_t=8,
                 condition_locations=[ConditionLocation.FIRST_RANDOM_N],
                 ema=dict(enabled=True),
                 prompt_refiner_config=dict(enabled=False),
@@ -169,7 +168,7 @@ predict2_multiview_training_2b_720p_10fps_7views_29frames_waymo5views = dict(
                     rope_w_extrapolation_ratio=3.0,
                     rope_t_extrapolation_ratio=8.0 / 24.0,
                     sac_config=dict(
-                        mode="predict2_2b_720",                    
+                        mode="predict2_2b_720",
                     ),
                 ),
             ),
@@ -205,8 +204,7 @@ predict2_multiview_training_2b_720p_10fps_7views_29frames_waymo5views = dict(
                 fps=10,
                 sample_n_views=len(camera_keys),
                 dataset_name=None,
-            )
-            
+            ),
         ),
         max_iter=100_000,
     ),
@@ -222,7 +220,7 @@ predict2_multiview_training_2b_720p_10fps_7views_29frames_waymo5views = dict(
         f_min=[0.1],
         warm_up_steps=[2_000],
         cycle_lengths=[40_000],
-    )
+    ),
 )
 
 # torchrun --nproc_per_node=8 --master_port=12341 -m scripts.train --config=cosmos_predict2/configs/base/config.py -- experiment=predict2_multiview_lora_training_2b_720p_10fps_7views_29frames_waymo5views
@@ -247,7 +245,7 @@ predict2_multiview_lora_training_2b_720p_10fps_7views_29frames_waymo5views = dic
             lora_target_modules="q_proj,k_proj,v_proj,output_proj,mlp.layer1,mlp.layer2",
             init_lora_weights=True,
             pipe_config=dict(
-                state_t = 8,
+                state_t=8,
                 condition_locations=[ConditionLocation.FIRST_RANDOM_N],
                 ema=dict(enabled=True),
                 prompt_refiner_config=dict(enabled=False),
@@ -264,7 +262,7 @@ predict2_multiview_lora_training_2b_720p_10fps_7views_29frames_waymo5views = dic
                     rope_w_extrapolation_ratio=3.0,
                     rope_t_extrapolation_ratio=8.0 / 24.0,
                     sac_config=dict(
-                        mode="none",                    
+                        mode="none",
                     ),
                 ),
             ),
@@ -300,8 +298,7 @@ predict2_multiview_lora_training_2b_720p_10fps_7views_29frames_waymo5views = dic
                 fps=10,
                 sample_n_views=len(camera_keys),
                 dataset_name=None,
-            )
-            
+            ),
         ),
         max_iter=100_000,
     ),
@@ -317,7 +314,7 @@ predict2_multiview_lora_training_2b_720p_10fps_7views_29frames_waymo5views = dic
         f_min=[0.1],
         warm_up_steps=[2_000],
         cycle_lengths=[40_000],
-    )
+    ),
 )
 
 
@@ -339,7 +336,7 @@ predict2_multiview_training_2b_480p_10fps_7views_29frames_waymo5views = dict(
         config=dict(
             pipe_config=dict(
                 resolution="480",
-                state_t = 8,
+                state_t=8,
                 condition_locations=[ConditionLocation.FIRST_RANDOM_N],
                 ema=dict(enabled=True),
                 prompt_refiner_config=dict(enabled=False),
@@ -356,7 +353,7 @@ predict2_multiview_training_2b_480p_10fps_7views_29frames_waymo5views = dict(
                     rope_w_extrapolation_ratio=3.0,
                     rope_t_extrapolation_ratio=8.0 / 24.0,
                     sac_config=dict(
-                        mode="none",                    
+                        mode="none",
                     ),
                 ),
             ),
@@ -392,8 +389,7 @@ predict2_multiview_training_2b_480p_10fps_7views_29frames_waymo5views = dict(
                 fps=10,
                 sample_n_views=len(camera_keys),
                 dataset_name=None,
-            )
-            
+            ),
         ),
         max_iter=100_000,
     ),
@@ -409,7 +405,7 @@ predict2_multiview_training_2b_480p_10fps_7views_29frames_waymo5views = dict(
         f_min=[0.1],
         warm_up_steps=[2_000],
         cycle_lengths=[40_000],
-    )
+    ),
 )
 
 for _item in [

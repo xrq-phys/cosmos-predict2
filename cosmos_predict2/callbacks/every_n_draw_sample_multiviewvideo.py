@@ -25,10 +25,6 @@ from einops import rearrange, repeat
 from hydra import compose, initialize
 from hydra.utils import instantiate
 
-from imaginaire.utils import log, misc
-from imaginaire.utils.easy_io import easy_io
-from imaginaire.utils.parallel_state_helper import is_tp_cp_pp_rank0
-from imaginaire.visualize.video import save_img_or_video
 from cosmos_predict2.callbacks.every_n_draw_sample import (
     EveryNDrawSample,
     convert_to_primitive,
@@ -38,6 +34,11 @@ from cosmos_predict2.callbacks.every_n_draw_sample import (
 
 # TODO: Remove callback dependency on model imports. Can pass keys as callback args.
 from cosmos_predict2.pipelines.multiview import NUM_CONDITIONAL_FRAMES_KEY
+from imaginaire.utils import log, misc
+from imaginaire.utils.easy_io import easy_io
+from imaginaire.utils.parallel_state_helper import is_tp_cp_pp_rank0
+from imaginaire.visualize.video import save_img_or_video
+
 TRAIN_SAMPLE_N_VIEWS_KEY = "train_sample_n_views"
 CONTROL_WEIGHT_KEY = "control_weight"
 # from projects.cosmos.transfer2_multiview.models.multiview_vid2vid_model_control_vace import CONTROL_WEIGHT_KEY
@@ -56,7 +57,16 @@ class EveryNDrawSampleMultiviewVideo(EveryNDrawSample):
     This class is a modified version of EveryNDrawSample that saves 12 frames instead of 3.
     """
 
-    def __init__(self, *args, sample_n_views, n_view_embed=None, dataset_name=None, ctrl_hint_keys=None, control_weights=[1.0], **kwargs):
+    def __init__(
+        self,
+        *args,
+        sample_n_views,
+        n_view_embed=None,
+        dataset_name=None,
+        ctrl_hint_keys=None,
+        control_weights=[1.0],
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.sample_n_views = sample_n_views
         self.n_view_embed = n_view_embed
@@ -171,9 +181,9 @@ class EveryNDrawSampleMultiviewVideo(EveryNDrawSample):
         assert len(split_captions) == 6, f"Expected 6 view captions, got {len(split_captions)}"
         new_data_batch["ai_caption"] = [" -- ".join(split_captions[0:n_views])]
         new_data_batch["n_orig_video_frames_per_view"] = data_batch["n_orig_video_frames_per_view"]
-        assert (
-            data_batch["ref_cam_view_idx_sample_position"].item() == -1
-        ), f"ref_cam_view_idx_sample_position is not supported by batch sampling, got {data_batch['ref_cam_view_idx_sample_position']}"
+        assert data_batch["ref_cam_view_idx_sample_position"].item() == -1, (
+            f"ref_cam_view_idx_sample_position is not supported by batch sampling, got {data_batch['ref_cam_view_idx_sample_position']}"
+        )
         new_data_batch["ref_cam_view_idx_sample_position"] = data_batch["ref_cam_view_idx_sample_position"]
         new_data_batch["camera_keys_selection"] = data_batch["camera_keys_selection"][0:n_views]
         new_data_batch["view_indices_selection"] = data_batch["view_indices_selection"]
@@ -205,15 +215,21 @@ class EveryNDrawSampleMultiviewVideo(EveryNDrawSample):
         data_batch_sample_all[TRAIN_SAMPLE_N_VIEWS_KEY] = 0  # Model will not apply additional sampling
         if self.sample_n_views == data_batch_sample_all["sample_n_views"]:
             data_batch_sample_all = misc.to(data_batch_sample_all, **model.tensor_kwargs)
-            data_batch_sample_all[model.pipe.input_video_key] = data_batch_sample_all[model.pipe.input_video_key].to(torch.uint8)
+            data_batch_sample_all[model.pipe.input_video_key] = data_batch_sample_all[model.pipe.input_video_key].to(
+                torch.uint8
+            )
             return self.every_n_impl_multiview(
                 trainer, model, None, data_batch_sample_all, output_batch=None, loss=None, iteration=iteration
             )
         data_batch_sample_n = self.sample_first_n_views_from_data_batch(data_batch_sample_all, self.sample_n_views)
         data_batch_sample_all = misc.to(data_batch_sample_all, **model.tensor_kwargs)
-        data_batch_sample_all[model.pipe.input_video_key] = data_batch_sample_all[model.pipe.input_video_key].to(torch.uint8)
+        data_batch_sample_all[model.pipe.input_video_key] = data_batch_sample_all[model.pipe.input_video_key].to(
+            torch.uint8
+        )
         data_batch_sample_n = misc.to(data_batch_sample_n, **model.tensor_kwargs)
-        data_batch_sample_n[model.pipe.input_video_key] = data_batch_sample_n[model.pipe.input_video_key].to(torch.uint8)
+        data_batch_sample_n[model.pipe.input_video_key] = data_batch_sample_n[model.pipe.input_video_key].to(
+            torch.uint8
+        )
         return self.every_n_impl_multiview(
             trainer,
             model,
@@ -318,9 +334,9 @@ class EveryNDrawSampleMultiviewVideo(EveryNDrawSample):
                 ),
                 **model.tensor_kwargs,
             )
-            assert (
-                data_batch["neg_t5_text_embeddings"].shape == data_batch["t5_text_embeddings"].shape
-            ), f"{data_batch['neg_t5_text_embeddings'].shape} != {data_batch['t5_text_embeddings'].shape}"
+            assert data_batch["neg_t5_text_embeddings"].shape == data_batch["t5_text_embeddings"].shape, (
+                f"{data_batch['neg_t5_text_embeddings'].shape} != {data_batch['t5_text_embeddings'].shape}"
+            )
             data_batch["neg_t5_text_mask"] = data_batch["t5_text_mask"]
         to_show = []
         for num_cond_frames in [0, 1]:
@@ -340,7 +356,7 @@ class EveryNDrawSampleMultiviewVideo(EveryNDrawSample):
                     to_show.append(sample.float().cpu())
 
         to_show.append(raw_data.float().cpu())
-        
+
         # Transfer2-multiview: visualize control input
         if self.ctrl_hint_keys:
             # visualize input video

@@ -41,6 +41,7 @@ from cosmos_predict2.data.dataset_utils import (
     ToTensorVideo,
 )
 
+
 class MultiviewDataset(Dataset):
     def __init__(
         self,
@@ -102,6 +103,7 @@ class MultiviewDataset(Dataset):
 
         self.camera_to_view_id = camera_to_view_id
         self.front_camera_key = front_camera_key
+
     def __str__(self):
         return f"{len(self.video_paths)} samples from {self.dataset_dir}"
 
@@ -185,7 +187,9 @@ class MultiviewDataset(Dataset):
 
             for camera_key in camera_keys_selection:
                 video, fps = self._get_frames(
-                    os.path.join(os.path.dirname(os.path.dirname(video_path)), camera_key, os.path.basename(video_path)),
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(video_path)), camera_key, os.path.basename(video_path)
+                    ),
                     frame_ids,
                 )
                 video = video.permute(1, 0, 2, 3)  # Rearrange from [T, C, H, W] to [C, T, H, W]
@@ -204,7 +208,9 @@ class MultiviewDataset(Dataset):
 
                 t5_mask = torch.ones(t5_embedding.shape[0], dtype=torch.int64)
                 if t5_embedding.shape[0] < _NUM_T5_TOKENS:
-                    t5_embedding = torch.cat([t5_embedding, torch.zeros(_NUM_T5_TOKENS - t5_embedding.shape[0], _T5_EMBED_DIM)], dim=0)
+                    t5_embedding = torch.cat(
+                        [t5_embedding, torch.zeros(_NUM_T5_TOKENS - t5_embedding.shape[0], _T5_EMBED_DIM)], dim=0
+                    )
                     t5_mask = torch.cat([t5_mask, torch.zeros(_NUM_T5_TOKENS - t5_mask.shape[0])], dim=0)
                 else:
                     t5_embedding = t5_embedding[:_NUM_T5_TOKENS]
@@ -213,7 +219,7 @@ class MultiviewDataset(Dataset):
                 t5_masks.append(t5_mask)
             video = torch.cat(videos, dim=1)
             t5_embedding = torch.cat(t5_embeddings, dim=0)
-            
+
             data["video"] = video
             data["video_name"] = {
                 "video_path": video_path,
@@ -229,7 +235,7 @@ class MultiviewDataset(Dataset):
             data["padding_mask"] = torch.zeros(1, self.H, self.W)
             data["view_indices"] = view_indices_t.contiguous()
             data["latent_view_indices_B_T"] = latent_view_indices_t.contiguous()
-            data["ref_cam_view_idx_sample_position"] = torch.ones(1, dtype=torch.int64) * (- 1)
+            data["ref_cam_view_idx_sample_position"] = torch.ones(1, dtype=torch.int64) * (-1)
             return data
         except Exception:
             warnings.warn(
@@ -263,7 +269,7 @@ if __name__ == "__main__":
             "pinhole_front_left": 5,
             "pinhole_front_right": 1,
             "pinhole_side_left": 4,
-            "pinhole_side_right": 2
+            "pinhole_side_right": 2,
         },
         state_t=8,
         is_train=False,

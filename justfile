@@ -4,6 +4,11 @@ default:
 extras := "flash-attn transformer-engine natten"
 training_extras := "apex"
 
+# Setup the repository
+setup:
+  uv tool install -U pre-commit
+  pre-commit install -c .pre-commit-config-base.yaml
+
 # Install inference in existing environment
 install cuda='cu126':
     echo {{ cuda }} > .venv/cuda-version
@@ -25,3 +30,10 @@ _conda-env:
 install-conda:
     just -f {{ justfile() }} _conda-env
     just -f {{ justfile() }} install cu126
+
+# Run linting and formatting
+lint: setup
+  pre-commit run --all-files || pre-commit run --all-files
+
+# Run tests
+test: lint

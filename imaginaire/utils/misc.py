@@ -66,9 +66,9 @@ def to(
     Returns:
         data (Any): Data cast to the specified device, dtype, and/or memory_format.
     """
-    assert (
-        device is not None or dtype is not None or memory_format is not None
-    ), "at least one of device, dtype, memory_format should be specified"
+    assert device is not None or dtype is not None or memory_format is not None, (
+        "at least one of device, dtype, memory_format should be specified"
+    )
     if isinstance(data, torch.Tensor):
         if (
             memory_format == torch.channels_last

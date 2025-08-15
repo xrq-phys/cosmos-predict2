@@ -55,9 +55,9 @@ class FastEmaModelUpdater:
         target_list = []
         source_list = []
         for tgt_params, src_params in zip(tgt_model.parameters(), src_model.parameters()):
-            assert (
-                tgt_params.dtype == torch.float32
-            ), f"EMA model only works in FP32 dtype, got {tgt_params.dtype} instead."
+            assert tgt_params.dtype == torch.float32, (
+                f"EMA model only works in FP32 dtype, got {tgt_params.dtype} instead."
+            )
             target_list.append(tgt_params)
             source_list.append(src_params.data)
         torch._foreach_mul_(target_list, beta)

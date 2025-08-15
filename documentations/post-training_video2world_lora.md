@@ -31,11 +31,11 @@ LoRA (Low-Rank Adaptation) is a parameter-efficient fine-tuning technique that a
 - **Preserved Base Capabilities**: Retains the original model's capabilities while adding domain-specific improvements
 
 We support LoRA post-training with example datasets:
-- [post-training_video2world_cosmos_nemo_assets](/documentations/post-training_video2world_cosmos_nemo_assets.md)
+- [post-training_video2world_cosmos_nemo_assets](./post-training_video2world_cosmos_nemo_assets.md)
   - Basic examples with a small 4 videos dataset (can be adapted for LoRA)
-- [post-training_video2world_agibot_fisheye](/documentations/post-training_video2world_agibot_fisheye.md)
+- [post-training_video2world_agibot_fisheye](./post-training_video2world_agibot_fisheye.md)
   - Examples with fisheye-view dataset (can be adapted for LoRA)
-- [post-training_video2world_gr00t](/documentations/post-training_video2world_gr00t.md)
+- [post-training_video2world_gr00t](./post-training_video2world_gr00t.md)
   - Examples with GR00T-dreams datasets (can be adapted for LoRA)
 
 ### Cosmos-NeMo-Assets LoRA Configurations

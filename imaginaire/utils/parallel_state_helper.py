@@ -21,7 +21,6 @@ MCore is a third-party library that is infrequently updated and may introduce ba
 To mitigate these issues, this module provides stable functions that ensure the imaginaire codebase remains compatible with different versions of MCore.
 """
 
-
 try:
     from megatron.core import parallel_state
 except ImportError:

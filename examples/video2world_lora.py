@@ -108,9 +108,9 @@ def setup_lora_pipeline(config, dit_path, text_encoder_path, args):
     )
     # 3. Set up tokenizer
     pipe.tokenizer = instantiate(config.tokenizer)
-    assert (
-        pipe.tokenizer.latent_ch == pipe.config.state_ch
-    ), f"latent_ch {pipe.tokenizer.latent_ch} != state_shape {pipe.config.state_ch}"
+    assert pipe.tokenizer.latent_ch == pipe.config.state_ch, (
+        f"latent_ch {pipe.tokenizer.latent_ch} != state_shape {pipe.config.state_ch}"
+    )
     # 4. Load text encoder
     if text_encoder_path:
         # inference
@@ -121,9 +121,9 @@ def setup_lora_pipeline(config, dit_path, text_encoder_path, args):
         pipe.text_encoder = None
     # 5. Initialize conditioner
     pipe.conditioner = instantiate(config.conditioner)
-    assert (
-        sum(p.numel() for p in pipe.conditioner.parameters() if p.requires_grad) == 0
-    ), "conditioner should not have learnable parameters"
+    assert sum(p.numel() for p in pipe.conditioner.parameters() if p.requires_grad) == 0, (
+        "conditioner should not have learnable parameters"
+    )
     # Load prompt refiner
     pipe.prompt_refiner = CosmosReason1(
         checkpoint_dir=config.prompt_refiner_config.checkpoint_dir,
@@ -225,7 +225,7 @@ def setup_lora_pipeline(config, dit_path, text_encoder_path, args):
     trainable_params = sum(p.numel() for p in pipe.dit.parameters() if p.requires_grad)
     log.info(f"Total parameters: {total_params:,}")
     log.info(f"Trainable LoRA parameters: {trainable_params:,}")
-    log.info(f"LoRA parameter ratio: {trainable_params/total_params*100:.2f}%")
+    log.info(f"LoRA parameter ratio: {trainable_params / total_params * 100:.2f}%")
     return pipe
 
 

@@ -110,18 +110,18 @@ class ResizeSmallestSideAspectPreserving(Augmentor):
         assert self.args is not None, "Please specify args in augmentations"
 
         img_size = obtain_augmentation_size(data_dict, self.args)
-        assert isinstance(
-            img_size, (tuple, omegaconf.listconfig.ListConfig)
-        ), f"Arg size in resize should be a tuple, get {type(img_size)}, {img_size}"
+        assert isinstance(img_size, (tuple, omegaconf.listconfig.ListConfig)), (
+            f"Arg size in resize should be a tuple, get {type(img_size)}, {img_size}"
+        )
         img_w, img_h = img_size
 
         orig_w, orig_h = obtain_image_size(data_dict, self.input_keys)
         scaling_ratio = max((img_w / orig_w), (img_h / orig_h))
         target_size = (int(scaling_ratio * orig_h + 0.5), int(scaling_ratio * orig_w + 0.5))
 
-        assert (
-            target_size[0] >= img_h and target_size[1] >= img_w
-        ), f"Resize error. orig {(orig_w, orig_h)} desire {img_size} compute {target_size}"
+        assert target_size[0] >= img_h and target_size[1] >= img_w, (
+            f"Resize error. orig {(orig_w, orig_h)} desire {img_size} compute {target_size}"
+        )
 
         for inp_key, out_key in zip(self.input_keys, self.output_keys):
             data_dict[out_key] = transforms_F.resize(
@@ -157,18 +157,18 @@ class ResizeLargestSideAspectPreserving(Augmentor):
         assert self.args is not None, "Please specify args in augmentations"
 
         img_size = obtain_augmentation_size(data_dict, self.args)
-        assert isinstance(
-            img_size, (tuple, omegaconf.listconfig.ListConfig)
-        ), f"Arg size in resize should be a tuple, get {type(img_size)}, {img_size}"
+        assert isinstance(img_size, (tuple, omegaconf.listconfig.ListConfig)), (
+            f"Arg size in resize should be a tuple, get {type(img_size)}, {img_size}"
+        )
         img_w, img_h = img_size
 
         orig_w, orig_h = obtain_image_size(data_dict, self.input_keys)
         scaling_ratio = min((img_w / orig_w), (img_h / orig_h))
         target_size = (int(scaling_ratio * orig_h + 0.5), int(scaling_ratio * orig_w + 0.5))
 
-        assert (
-            target_size[0] <= img_h and target_size[1] <= img_w
-        ), f"Resize error. orig {(orig_w, orig_h)} desire {img_size} compute {target_size}"
+        assert target_size[0] <= img_h and target_size[1] <= img_w, (
+            f"Resize error. orig {(orig_w, orig_h)} desire {img_size} compute {target_size}"
+        )
 
         for inp_key, out_key in zip(self.input_keys, self.output_keys):
             data_dict[out_key] = transforms_F.resize(

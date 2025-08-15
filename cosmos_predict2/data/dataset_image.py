@@ -131,12 +131,4 @@ if __name__ == "__main__":
     indices = [0, 13, -1]
     for idx in indices:
         data = dataset[idx]
-        log.info(
-            (
-                f"{idx=} "
-                f"{data['images'].sum()=}\n"
-                f"{data['images'].shape=}\n"
-                f"{data['t5_text_embeddings'].shape=}\n"
-                "---"
-            )
-        )
+        log.info((f"{idx=} {data['images'].sum()=}\n{data['images'].shape=}\n{data['t5_text_embeddings'].shape=}\n---"))

@@ -22,8 +22,9 @@ from einops import rearrange
 from PIL import Image as PILImage
 from torch import Tensor
 
-from imaginaire.utils.easy_io import easy_io
 from imaginaire.utils import log
+from imaginaire.utils.easy_io import easy_io
+
 
 def save_image_or_video_multiview(
     tensor: Tensor, save_path: Union[str, IO[Any]], fps: int = 24, quality=None, ffmpeg_params=None, n_views: int = 1
@@ -62,7 +63,9 @@ def save_image_or_video_multiview(
     if ffmpeg_params is not None:
         kwargs["ffmpeg_params"] = ffmpeg_params
 
-    save_obj = (rearrange((tensor.cpu().float().numpy() * 255), "c (v t) h w -> t (v h) w c", v=n_views) + 0.5).astype(np.uint8)
+    save_obj = (rearrange((tensor.cpu().float().numpy() * 255), "c (v t) h w -> t (v h) w c", v=n_views) + 0.5).astype(
+        np.uint8
+    )
     if isinstance(save_path, str):
         # Check if path already has an extension
         base, ext = os.path.splitext(save_path)
@@ -70,7 +73,6 @@ def save_image_or_video_multiview(
             save_path = f"{base}.mp4"
     log.info(f"Saving video to {save_path} with fps {fps} and result shape {save_obj.shape}")
     easy_io.dump(save_obj, save_path, file_format="mp4", format="mp4", fps=fps, **kwargs)
-    
 
 
 def save_image_or_video(

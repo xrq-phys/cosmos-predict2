@@ -109,7 +109,7 @@ class OperationWatchdog:
                 data = fetch_user_data(user_id)
         """
         # Create unique ID for this specific operation instance
-        op_id = f"{operation_name}_{int(time.time()*1000)}"
+        op_id = f"{operation_name}_{int(time.time() * 1000)}"
         start_time = time.time()
 
         # Register operation

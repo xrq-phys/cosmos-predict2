@@ -138,7 +138,7 @@ class LambdaWarmUpCosineScheduler:
         n = n - self.cum_cycles[cycle]
         if self.verbosity_interval > 0:
             if n % self.verbosity_interval == 0:
-                log.info(f"current step: {n}, recent lr-multiplier: {self.last_f}, " f"current cycle {cycle}")
+                log.info(f"current step: {n}, recent lr-multiplier: {self.last_f}, current cycle {cycle}")
         if n < self.lr_warm_up_steps[cycle]:
             f = (self.f_max[cycle] - self.f_start[cycle]) / self.lr_warm_up_steps[cycle] * n + self.f_start[cycle]
             self.last_f = f
@@ -164,7 +164,7 @@ class LambdaLinearScheduler(LambdaWarmUpCosineScheduler):
         n = n - self.cum_cycles[cycle]
         if self.verbosity_interval > 0:
             if n % self.verbosity_interval == 0:
-                log.info(f"current step: {n}, recent lr-multiplier: {self.last_f}, " f"current cycle {cycle}")
+                log.info(f"current step: {n}, recent lr-multiplier: {self.last_f}, current cycle {cycle}")
 
         if n < self.lr_warm_up_steps[cycle]:
             f = (self.f_max[cycle] - self.f_start[cycle]) / self.lr_warm_up_steps[cycle] * n + self.f_start[cycle]

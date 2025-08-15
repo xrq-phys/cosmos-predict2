@@ -186,4 +186,4 @@ torchrun --nproc_per_node=${NUM_GPUS} examples/multiview.py  \
   --save_path output/multiview_postrain_2b_sample1_cond1.mp4
 ```
 
-See [documentations/inference_multiview.md](documentations/inference_multiview.md) for inference run details.
+See [documentations/inference_multiview.md](./inference_multiview.md) for inference run details.

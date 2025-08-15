@@ -19,6 +19,7 @@ A variant of predict2_video2world.py for GR00T models that:
 2. Turns off the guardrail and prompt refiner
 3. Supports two GR00T variants: GR1 and DROID
 """
+
 import argparse
 import json
 import os

@@ -8,7 +8,7 @@ This guide explains how to run inference with **Cosmos-Predict2 Multiview** mode
 - [Examples](#examples)
   - [7 views generation (#7-views generation)
 - [API Documentation](#api-documentation)
-- [Prompt Engineering Tips](#prompt-engineering-tips)
+<!-- - [Prompt Engineering Tips](#prompt-engineering-tips) -->
 - [Related Documentation](#related-documentation)
 
 ---
@@ -23,7 +23,7 @@ Before running inference:
 ---
 ## Overview
 
-Multiview models extend Video2World to handle multiple camera perspectives jointly. The MultiView pipeline supports 3 modes through the number of conditional frames variable. 
+Multiview models extend Video2World to handle multiple camera perspectives jointly. The MultiView pipeline supports 3 modes through the number of conditional frames variable.
 
 1. Text2World-Multiview : num_conditional_frames=0
 2. Image2World-Multiview: num_conditional_frames=1
@@ -41,7 +41,7 @@ python -m examples.multiview --help
 
 ### 7-views generation
 
-The multiview generation script expects the video path and a path containing the input prompt (as `txt` file) or prompt embeddinggs tensor as `pkl` file. 
+The multiview generation script expects the video path and a path containing the input prompt (as `txt` file) or prompt embeddinggs tensor as `pkl` file.
 
 ```bash
 export NUM_GPUS=8
@@ -83,4 +83,4 @@ In addition to the same parameters supported by `tex2world.py`, `multiview.py` a
 - [Multiview Inference Guide](inference_multiview.md) - Generate still images from text prompts
 - [Setup Guide](setup.md) - Environment setup and checkpoint download instructions
 - [Performance Guide](performance.md) - Hardware requirements and optimization recommendations
-- [Training Multiview on Waymo Guide](multiview_post-training_waymo.md) - Information on training a multiview model on Waymo dataset.
+<!-- - [Training Multiview on Waymo Guide](multiview_post-training_waymo.md) - Information on training a multiview model on Waymo dataset. -->

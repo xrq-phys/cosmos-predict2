@@ -153,7 +153,7 @@ python examples/video2world.py \
   --save_path output/cosmos_nemo_assets/generated_video_teal_robot.mp4
 ```
 
-See [documentations/inference_video2world.md](documentations/inference_video2world.md) for inference run details.
+See [documentations/inference_video2world.md](./inference_video2world.md) for inference run details.
 
 ##### Cosmos-Predict2-14B-Video2World
 

@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
 from contextlib import nullcontext
 
-import io
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -574,8 +574,9 @@ def _video_vae(
         model.to_empty(device=device)
         if load_mean_std:
             img_mean, img_std = torch.randn(1, 16, 1, 1, 1, device=device), torch.randn(1, 16, 1, 1, 1, device=device)
-            video_mean, video_std = torch.randn(1, 16, 32, 1, 1, device=device), torch.randn(
-                1, 16, 32, 1, 1, device=device
+            video_mean, video_std = (
+                torch.randn(1, 16, 32, 1, 1, device=device),
+                torch.randn(1, 16, 32, 1, 1, device=device),
             )
     else:
         if get_rank() == 0:
@@ -601,11 +602,13 @@ def _video_vae(
         else:
             model.to_empty(device=device)
             if load_mean_std:
-                img_mean, img_std = torch.randn(1, 16, 1, 1, 1, device=device), torch.randn(
-                    1, 16, 1, 1, 1, device=device
+                img_mean, img_std = (
+                    torch.randn(1, 16, 1, 1, 1, device=device),
+                    torch.randn(1, 16, 1, 1, 1, device=device),
                 )
-                video_mean, video_std = torch.randn(1, 16, 32, 1, 1, device=device), torch.randn(
-                    1, 16, 32, 1, 1, device=device
+                video_mean, video_std = (
+                    torch.randn(1, 16, 32, 1, 1, device=device),
+                    torch.randn(1, 16, 32, 1, 1, device=device),
                 )
     sync_model_states(model)
 
@@ -768,11 +771,11 @@ class CosmosImageTokenizer(torch.nn.Module, VideoTokenizerInterface):
             squeeze_for_image (bool): Whether to squeeze the image data. Defaults to False.
         """
         super().__init__()
-        
+
         self.dtype = dtype
         self.is_image = is_image
         self.is_casual = False
-        
+
         self.apply_mean_std = apply_mean_std
         self.num_overlap_latent = num_overlap_latent
         self.name = name
@@ -794,7 +797,7 @@ class CosmosImageTokenizer(torch.nn.Module, VideoTokenizerInterface):
         self.decoder.eval()
         mean_std = tokenizer_ckpt["mean_std"]
         self.register_mean_std(mean_std[0], mean_std[1])
-        
+
         log.info(f"Built tokenizer {self.name}")
 
     @property
@@ -898,9 +901,9 @@ class CosmosImageTokenizer(torch.nn.Module, VideoTokenizerInterface):
         if num_pixel_frames is None:
             assert num_latent_frames is not None, "Either num_pixel_frames or num_latent_frames should be provided"
             num_pixel_frames = self.get_pixel_num_frames(num_latent_frames)
-        assert (
-            num_pixel_frames >= self.pixel_chunk_duration
-        ), f"Expect the number of frames {num_pixel_frames} to be larger than the chunk size {self.pixel_chunk_duration}"
+        assert num_pixel_frames >= self.pixel_chunk_duration, (
+            f"Expect the number of frames {num_pixel_frames} to be larger than the chunk size {self.pixel_chunk_duration}"
+        )
 
         # Check if the number of frames is divisible by the chunk size
         if (num_pixel_frames - self.pixel_chunk_duration) % (self.pixel_chunk_duration - self.num_overlap_pixels) != 0:

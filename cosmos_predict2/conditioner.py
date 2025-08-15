@@ -16,16 +16,19 @@
 from __future__ import annotations
 
 import copy
+import random
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from contextlib import nullcontext
 from dataclasses import dataclass, field, fields
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
-from einops import rearrange
+
 import omegaconf
 import torch
 import torch.nn as nn
+from einops import rearrange
+from omegaconf import ListConfig
 from torch.distributed import ProcessGroup
 
 from cosmos_predict2.functional.batch_ops import batch_mul
@@ -34,8 +37,6 @@ from cosmos_predict2.utils.misc import count_params, disabled_train
 from imaginaire.lazy_config import instantiate
 from imaginaire.utils import log
 from imaginaire.utils.validator import Validator
-from omegaconf import ListConfig
-import random
 
 T = TypeVar("T", bound="BaseCondition")
 
@@ -470,9 +471,9 @@ class GeneralConditioner(nn.Module, ABC):
         self.embedders = nn.ModuleDict()
         for n, (emb_name, emb_config) in enumerate(emb_models.items()):
             embedder = instantiate(emb_config)
-            assert isinstance(
-                embedder, AbstractEmbModel
-            ), f"embedder model {embedder.__class__.__name__} has to inherit from AbstractEmbModel"
+            assert isinstance(embedder, AbstractEmbModel), (
+                f"embedder model {embedder.__class__.__name__} has to inherit from AbstractEmbModel"
+            )
             embedder.is_trainable = getattr(emb_config, "is_trainable", True)
             embedder.dropout_rate = getattr(emb_config, "dropout_rate", 0.0)
             if not embedder.is_trainable:
@@ -817,16 +818,16 @@ class MultiViewCondition(VideoCondition):
             condition_video_input_mask_B_C_V_T_H_W = self.enable_ref_cam_condition(
                 ref_cam_idx_B, condition_video_input_mask_B_C_V_T_H_W
             )
-            assert (
-                ref_cam_view_idx_sample_position == ref_cam_view_idx_sample_position[0]
-            ).all(), f"ref_cam_view_idx_sample_position must be the same for all examples. Got {ref_cam_view_idx_sample_position=}"
+            assert (ref_cam_view_idx_sample_position == ref_cam_view_idx_sample_position[0]).all(), (
+                f"ref_cam_view_idx_sample_position must be the same for all examples. Got {ref_cam_view_idx_sample_position=}"
+            )
             ref_cam_view_idx_sample_position_int = ref_cam_view_idx_sample_position[0].cpu().item()
             views_eligible_for_dropout.remove(ref_cam_view_idx_sample_position_int)
         elif ConditionLocation.ANY_CAM in condition_locations:
             if condition_cam_idx is None:
-                assert (
-                    kwargs["view_indices_B_T"].shape[-1] % sample_n_views == 0
-                ), f"view_indices_B_T last dimension must be a multiple of sample_n_views. Got view_indices_B_T.shape={kwargs['view_indices_B_T'].shape}, sample_n_views={sample_n_views}"
+                assert kwargs["view_indices_B_T"].shape[-1] % sample_n_views == 0, (
+                    f"view_indices_B_T last dimension must be a multiple of sample_n_views. Got view_indices_B_T.shape={kwargs['view_indices_B_T'].shape}, sample_n_views={sample_n_views}"
+                )
                 view_indices = kwargs["view_indices_B_T"]
                 selected_cam_latent_t_index = torch.randint(0, state_t, size=(B,))
                 any_cam_idx_B = view_indices[torch.arange(B), selected_cam_latent_t_index]
@@ -835,9 +836,9 @@ class MultiViewCondition(VideoCondition):
             condition_video_input_mask_B_C_V_T_H_W = self.enable_ref_cam_condition(
                 any_cam_idx_B, condition_video_input_mask_B_C_V_T_H_W
             )
-            assert (
-                any_cam_idx_B == any_cam_idx_B[0]
-            ).all(), f"any_cam_idx_B must be the same for all examples. Got {any_cam_idx_B=}"
+            assert (any_cam_idx_B == any_cam_idx_B[0]).all(), (
+                f"any_cam_idx_B must be the same for all examples. Got {any_cam_idx_B=}"
+            )
             any_cam_idx_B_int = any_cam_idx_B[0].cpu().item()
             views_eligible_for_dropout.remove(any_cam_idx_B_int)
         if ConditionLocation.FIRST_RANDOM_N in condition_locations:
@@ -852,7 +853,9 @@ class MultiViewCondition(VideoCondition):
                 assert (
                     random_min_num_conditional_frames_per_view is not None
                     and random_max_num_conditional_frames_per_view is not None
-                ), f"random_min_num_conditional_frames_per_view and random_max_num_conditional_frames_per_view must be provided if num_conditional_frames_per_view is None. Got {random_min_num_conditional_frames_per_view=}, {random_max_num_conditional_frames_per_view=}, {num_conditional_frames_per_view=}"
+                ), (
+                    f"random_min_num_conditional_frames_per_view and random_max_num_conditional_frames_per_view must be provided if num_conditional_frames_per_view is None. Got {random_min_num_conditional_frames_per_view=}, {random_max_num_conditional_frames_per_view=}, {num_conditional_frames_per_view=}"
+                )
                 num_conditional_frames_per_view_B = torch.randint(
                     random_min_num_conditional_frames_per_view,
                     random_max_num_conditional_frames_per_view + 1,
@@ -885,9 +888,9 @@ class MultiViewCondition(VideoCondition):
         Returns:
             A copy of the condition video input mask with the cam_idx[i] view set to 1 for example i
         """
-        assert (
-            condition_video_input_mask_B_C_V_T_H_W.ndim == 6
-        ), f"condition_video_input_mask_B_C_V_T_H_W must have 6 dimensions. Got {condition_video_input_mask_B_C_V_T_H_W.shape=}"
+        assert condition_video_input_mask_B_C_V_T_H_W.ndim == 6, (
+            f"condition_video_input_mask_B_C_V_T_H_W must have 6 dimensions. Got {condition_video_input_mask_B_C_V_T_H_W.shape=}"
+        )
         assert cam_idx_B.ndim == 1, f"cam_idx_B must have 1 dimension. Got {cam_idx_B.shape=}"
         copy_condition_video_input_mask_B_C_V_T_H_W = condition_video_input_mask_B_C_V_T_H_W.clone()
         for i in range(copy_condition_video_input_mask_B_C_V_T_H_W.shape[0]):
@@ -905,9 +908,9 @@ class MultiViewCondition(VideoCondition):
         Returns:
             A copy of the condition video input mask with the first num_conditional_frames_per_view_B frames of each view set to 1
         """
-        assert (
-            condition_video_input_mask_B_C_V_T_H_W.ndim == 6
-        ), "condition_video_input_mask_B_C_V_T_H_W must have 6 dimensions"
+        assert condition_video_input_mask_B_C_V_T_H_W.ndim == 6, (
+            "condition_video_input_mask_B_C_V_T_H_W must have 6 dimensions"
+        )
         B, _, _, _, _, _ = condition_video_input_mask_B_C_V_T_H_W.shape
         copy_condition_video_input_mask_B_C_V_T_H_W = condition_video_input_mask_B_C_V_T_H_W.clone()
         for idx in range(B):

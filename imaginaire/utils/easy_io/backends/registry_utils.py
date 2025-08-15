@@ -44,7 +44,7 @@ def _register_backend(
     global backends, prefix_to_backends
 
     if not isinstance(name, str):
-        raise TypeError("the backend name should be a string, " f"but got {type(name)}")
+        raise TypeError(f"the backend name should be a string, but got {type(name)}")
 
     if not inspect.isclass(backend):
         raise TypeError(f"backend should be a class, but got {type(backend)}")
@@ -53,7 +53,7 @@ def _register_backend(
 
     if name in backends and not force:
         raise ValueError(
-            f"{name} is already registered as a storage backend, " 'add "force=True" if you want to override it'
+            f'{name} is already registered as a storage backend, add "force=True" if you want to override it'
         )
     backends[name] = backend
 
@@ -66,8 +66,7 @@ def _register_backend(
         for prefix in prefixes:
             if prefix in prefix_to_backends and not force:
                 raise ValueError(
-                    f"{prefix} is already registered as a storage backend,"
-                    ' add "force=True" if you want to override it'
+                    f'{prefix} is already registered as a storage backend, add "force=True" if you want to override it'
                 )
 
             prefix_to_backends[prefix] = backend

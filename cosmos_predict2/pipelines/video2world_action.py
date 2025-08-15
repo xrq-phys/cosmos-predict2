@@ -80,9 +80,9 @@ class Video2WorldActionConditionedPipeline(Video2WorldPipeline):
 
         # 3. Set up tokenizer
         pipe.tokenizer = instantiate(config.tokenizer)
-        assert (
-            pipe.tokenizer.latent_ch == pipe.config.state_ch
-        ), f"latent_ch {pipe.tokenizer.latent_ch} != state_shape {pipe.config.state_ch}"
+        assert pipe.tokenizer.latent_ch == pipe.config.state_ch, (
+            f"latent_ch {pipe.tokenizer.latent_ch} != state_shape {pipe.config.state_ch}"
+        )
 
         # 4. Load text encoder
         if text_encoder_path:
@@ -95,9 +95,9 @@ class Video2WorldActionConditionedPipeline(Video2WorldPipeline):
 
         # 5. Initialize conditioner
         pipe.conditioner = instantiate(config.conditioner)
-        assert (
-            sum(p.numel() for p in pipe.conditioner.parameters() if p.requires_grad) == 0
-        ), "conditioner should not have learnable parameters"
+        assert sum(p.numel() for p in pipe.conditioner.parameters() if p.requires_grad) == 0, (
+            "conditioner should not have learnable parameters"
+        )
 
         if load_prompt_refiner:
             pipe.prompt_refiner = CosmosReason1(
@@ -138,7 +138,7 @@ class Video2WorldActionConditionedPipeline(Video2WorldPipeline):
             state_dict_dit_compatible = dict()
             for k, v in state_dict.items():
                 if k.startswith(prefix_to_load):
-                    state_dict_dit_compatible[k[len(prefix_to_load):]] = v
+                    state_dict_dit_compatible[k[len(prefix_to_load) :]] = v
                 else:
                     state_dict_dit_compatible[k] = v
             pipe.dit.load_state_dict(state_dict_dit_compatible, strict=False, assign=True)

@@ -14,6 +14,7 @@
 # limitations under the License.
 
 """A rework of make_graphed_callabled function from TransformerEngine so that it works with inference-only."""
+
 from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union
 
 import torch
@@ -71,7 +72,7 @@ def _make_graphed_callables(
 
     if torch.is_autocast_enabled() and torch.is_autocast_cache_enabled():
         raise RuntimeError(
-            "make_graphed_callables does not support the autocast " "caching. Please set `cache_enabled=False`."
+            "make_graphed_callables does not support the autocast caching. Please set `cache_enabled=False`."
         )
 
     # Default is to pass no kwargs to callables
@@ -150,9 +151,9 @@ def _make_graphed_callables(
         warmup_func_idx.append(func_idx)
         warmup_func.append(func)
     assert len(warmup_func) == len(sample_args), f"Warmup runs {len(warmup_func)} don't match args {len(sample_args)}."
-    assert len(warmup_func_idx) == len(
-        set(warmup_func_idx)
-    ), f"Warmup runs {len(warmup_func)} but only {len(set(warmup_func_idx))} are unique."
+    assert len(warmup_func_idx) == len(set(warmup_func_idx)), (
+        f"Warmup runs {len(warmup_func)} but only {len(set(warmup_func_idx))} are unique."
+    )
 
     # Filter the TE modules that cudagraph can access.
     visited_te_modules = set()
@@ -229,7 +230,7 @@ def _make_graphed_callables(
             for key in kwargs_keys:
                 if key not in user_kwargs:
                     raise TypeError(
-                        f"Graphed callable was initialized with kwarg {key} ," "but it was not provided in graph replay"
+                        f"Graphed callable was initialized with kwarg {key} ,but it was not provided in graph replay"
                     )
 
             # Runs the autograd function with inputs == all inputs to

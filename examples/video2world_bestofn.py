@@ -30,10 +30,9 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 from cosmos_predict2.auxiliary.cosmos_reason1 import CosmosReason1
 from cosmos_predict2.pipelines.video2world import Video2WorldPipeline
-from examples.video2world import _DEFAULT_NEGATIVE_PROMPT, cleanup_distributed
+from examples.video2world import _DEFAULT_NEGATIVE_PROMPT, cleanup_distributed, validate_input_file
 from examples.video2world import process_single_generation as process_single_generation_default
 from examples.video2world import setup_pipeline as setup_pipeline_default
-from examples.video2world import validate_input_file
 from examples.video2world_gr00t import process_single_generation as process_single_generation_gr00t
 from examples.video2world_gr00t import setup_pipeline as setup_pipeline_gr00t
 from imaginaire.utils import log
@@ -160,8 +159,8 @@ def build_html_report(video_path: str, responses: List[str]) -> str:
                     comp_class = "red" if anomaly == "yes" else "green"
                     html += f"""
         <div class="{comp_class}">
-            <strong>{comp.get('name', 'Unknown Component')} - {comp.get('anomaly', '')}</strong>
-            <p>{comp.get('analysis', 'No analysis provided')}</p>
+            <strong>{comp.get("name", "Unknown Component")} - {comp.get("anomaly", "")}</strong>
+            <p>{comp.get("analysis", "No analysis provided")}</p>
         </div>
 """
 
@@ -281,7 +280,9 @@ def parse_args():
         "--offload_text_encoder", action="store_true", help="Offload text encoder to CPU to save GPU memory"
     )
     parser.add_argument(
-        "--downcast_text_encoder", action="store_true", help="Cast text encoder from checkpoint precision to pipeline precision"
+        "--downcast_text_encoder",
+        action="store_true",
+        help="Cast text encoder from checkpoint precision to pipeline precision",
     )
     # GR00T-specific settings. Specify --gr00t_variant to enable
     parser.add_argument("--gr00t_variant", type=str, default="", help="GR00T variant to use", choices=["gr1", "droid"])

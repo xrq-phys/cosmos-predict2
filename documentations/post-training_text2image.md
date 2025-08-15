@@ -20,7 +20,7 @@ Before running training:
 Cosmos-Predict2 provides two models for generating videos from a combination of text and visual inputs: `Cosmos-Predict2-2B-Text2Image` and `Cosmos-Predict2-14B-Text2Image`. These models can transform a still image or video clip into a longer, animated sequence guided by the text description.
 
 We support post-training the models with example datasets.
-- [post-training_text2image_cosmos_nemo_assets](/documentations/post-training_text2image_cosmos_nemo_assets.md)
+- [post-training_text2image_cosmos_nemo_assets](./post-training_text2image_cosmos_nemo_assets.md)
   - Basic examples with a small 4 videos dataset
 
 ## Post-training Guide
@@ -254,7 +254,7 @@ python examples/text2image.py \
   --save_path output/cosmos_nemo_assets/generated_image_from_post-training.mp4
 ```
 
-See [documentations/inference_text2image.md](documentations/inference_text2image.md) for inference run details.
+See [documentations/inference_text2image.md](./inference_text2image.md) for inference run details.
 
 ##### Cosmos-Predict2-14B-Text2Image
 

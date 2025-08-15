@@ -234,9 +234,9 @@ class Predict2Text2ImageModel(ImaginaireModel):
         """
         is_image = self.input_image_key in data_batch
         is_video = self.input_video_key in data_batch
-        assert (
-            is_image != is_video
-        ), "Only one of the input_image_key or input_video_key should be present in the data_batch."
+        assert is_image != is_video, (
+            "Only one of the input_image_key or input_video_key should be present in the data_batch."
+        )
         return is_image
 
     def _update_train_stats(self, data_batch: dict[str, torch.Tensor]) -> None:

@@ -118,9 +118,7 @@ def get_file_backend(
         backend_args = {}
 
     if uri is None and "backend" not in backend_args and backend_key is None:
-        raise ValueError(
-            'uri should not be None when "backend" does not exist in ' "backend_args and backend_key is None"
-        )
+        raise ValueError('uri should not be None when "backend" does not exist in backend_args and backend_key is None')
 
     if uri is not None:
         prefix = _parse_uri_prefix(uri)
@@ -895,11 +893,11 @@ def load(
 
     if file_client_args is not None:
         warnings.warn(
-            '"file_client_args" will be deprecated in future. ' 'Please use "backend_args" instead',
+            '"file_client_args" will be deprecated in future. Please use "backend_args" instead',
             DeprecationWarning,
         )
         if backend_args is not None:
-            raise ValueError('"file_client_args and "backend_args" cannot be set at the ' "same time.")
+            raise ValueError('"file_client_args and "backend_args" cannot be set at the same time.')
 
     handler = file_handlers[file_format]
     if isinstance(file, str):
@@ -993,11 +991,11 @@ def dump(
 
     if file_client_args is not None:
         warnings.warn(
-            '"file_client_args" will be deprecated in future. ' 'Please use "backend_args" instead',
+            '"file_client_args" will be deprecated in future. Please use "backend_args" instead',
             DeprecationWarning,
         )
         if backend_args is not None:
-            raise ValueError('"file_client_args" and "backend_args" cannot be set at the ' "same time.")
+            raise ValueError('"file_client_args" and "backend_args" cannot be set at the same time.')
 
     handler = file_handlers[file_format]
     if file is None:

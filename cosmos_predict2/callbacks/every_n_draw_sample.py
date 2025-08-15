@@ -33,6 +33,7 @@ from imaginaire.model import ImaginaireModel
 from imaginaire.utils import distributed, log, misc
 from imaginaire.utils.easy_io import easy_io
 from imaginaire.utils.parallel_state_helper import is_tp_cp_pp_rank0
+
 # from imaginaire.visualize.video import save_img_or_video
 # from projects.cosmos.diffusion.v2.datasets.data_sources.item_datasets_for_validation import get_itemdataset_option
 
@@ -272,9 +273,9 @@ class EveryNDrawSample(EveryN):
                 ),
                 **model.tensor_kwargs,
             )
-            assert (
-                data_batch["neg_t5_text_embeddings"].shape == data_batch["t5_text_embeddings"].shape
-            ), f"{data_batch['neg_t5_text_embeddings'].shape} != {data_batch['t5_text_embeddings'].shape}"
+            assert data_batch["neg_t5_text_embeddings"].shape == data_batch["t5_text_embeddings"].shape, (
+                f"{data_batch['neg_t5_text_embeddings'].shape} != {data_batch['t5_text_embeddings'].shape}"
+            )
             data_batch["neg_t5_text_mask"] = data_batch["t5_text_mask"]
 
         to_show = []

@@ -100,9 +100,9 @@ class VideoParsing(Augmentor):
 
             # online hot-fix for alpamayo data. Skip the first 5 frames as there is chance that the first five frames contain black frames.
             if "alpamayo" in data_dict["__url__"].root:
-                assert (
-                    len(frame_indices) >= 5
-                ), "Getting less than 5 frames for alpamayo videos. There is no way to skip the first five frames."
+                assert len(frame_indices) >= 5, (
+                    "Getting less than 5 frames for alpamayo videos. There is no way to skip the first five frames."
+                )
                 frame_indices = frame_indices[5:]
                 start_frame += 5
             video_frames = video_reader.get_batch(frame_indices).asnumpy()

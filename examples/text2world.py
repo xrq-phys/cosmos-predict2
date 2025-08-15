@@ -133,7 +133,9 @@ def parse_args() -> argparse.Namespace:
         "--offload_text_encoder", action="store_true", help="Offload text encoder to CPU to save GPU memory"
     )
     parser.add_argument(
-        "--downcast_text_encoder", action="store_true", help="Cast text encoder from checkpoint precision to pipeline precision"
+        "--downcast_text_encoder",
+        action="store_true",
+        help="Cast text encoder from checkpoint precision to pipeline precision",
     )
     parser.add_argument(
         "--natten",

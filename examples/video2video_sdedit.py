@@ -21,50 +21,52 @@ import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 import time
+
 import torch
 import torch.distributed
 
-from cosmos_predict2.pipelines.video2video_sdedit import Text2ImageSDEditPipeline, Video2WorldSDEditPipeline
+from cosmos_predict2.configs.base.config_text2image import (
+    PREDICT2_TEXT2IMAGE_PIPELINE_2B,
+    PREDICT2_TEXT2IMAGE_PIPELINE_14B,
+)
 from cosmos_predict2.configs.base.config_video2world import (
     PREDICT2_VIDEO2WORLD_PIPELINE_2B,
     PREDICT2_VIDEO2WORLD_PIPELINE_14B,
     PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B,
     PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B,
 )
-from cosmos_predict2.configs.base.config_text2image import (
-    PREDICT2_TEXT2IMAGE_PIPELINE_2B,
-    PREDICT2_TEXT2IMAGE_PIPELINE_14B,
-)
+from cosmos_predict2.pipelines.video2video_sdedit import Text2ImageSDEditPipeline, Video2WorldSDEditPipeline
 
 # Import functionality from other example scripts
 from examples.video2world import _DEFAULT_NEGATIVE_PROMPT, cleanup_distributed, validate_input_file
-
 from imaginaire.utils import distributed, log, misc
-from imaginaire.utils.io import save_image_or_video, save_text_prompts
 from imaginaire.utils.easy_io import easy_io
+from imaginaire.utils.io import save_image_or_video, save_text_prompts
 
 _DEFAULT_POSITIVE_PROMPT = "A point-of-view video shot from inside a vehicle, capturing a snowy suburban street in the winter filled with snow on the side of the road."
 
 
-import os, textwrap, numpy as np, torch
+import os
+import textwrap
+
+import numpy as np
+import torch
 from PIL import Image, ImageDraw, ImageFont
 
-def concatenate_videos_with_title(output_video_path: str,
-                                  input_video_path: str,
-                                  title: str,
-                                  fps: int = 16):
+
+def concatenate_videos_with_title(output_video_path: str, input_video_path: str, title: str, fps: int = 16):
     """Concatenate two videos horizontally and add a multi-line title above them."""
     try:
         log.info("Loading videos…")
         out_frames, _ = easy_io.load(output_video_path)
-        in_frames,  _ = easy_io.load(input_video_path)
+        in_frames, _ = easy_io.load(input_video_path)
 
         # Determine target frame size
         out_h, out_w = out_frames.shape[1:3]
-        in_h,  in_w  =  in_frames.shape[1:3]
+        in_h, in_w = in_frames.shape[1:3]
         content_h = max(out_h, in_h)
         content_w = out_w + in_w
-        
+
         # Ensure dimensions are even for H.264 compatibility
         if content_h % 2 != 0:
             content_h += 1
@@ -129,7 +131,7 @@ def concatenate_videos_with_title(output_video_path: str,
             frames.append(full_f)
 
         video_np = np.stack(frames)
-        video_t = torch.from_numpy(video_np).permute(3,0,1,2) / 255.0
+        video_t = torch.from_numpy(video_np).permute(3, 0, 1, 2) / 255.0
 
         # Save video
         dst = os.path.splitext(output_video_path)[0] + "_concatenated.mp4"
@@ -141,6 +143,7 @@ def concatenate_videos_with_title(output_video_path: str,
     except Exception as e:
         log.error(f"Concatenation failed: {e}")
         return None
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Text to World Generation with Cosmos Predict2")
@@ -240,10 +243,17 @@ def parse_args() -> argparse.Namespace:
         help="Run the sparse attention variant (with NATTEN).",
     )
 
-    parser.add_argument("--input_video_path", type=str, default="assets/video2world/input3.mp4", help="Path to the input video")
-    parser.add_argument("--text2image_edit_strength", type=float, default=0.4, help="Strength of the text2image edit (0.0-1.0)")
-    parser.add_argument("--video2world_edit_strength", type=float, default=0.8, help="Strength of the video2world edit (0.0-1.0)")
+    parser.add_argument(
+        "--input_video_path", type=str, default="assets/video2world/input3.mp4", help="Path to the input video"
+    )
+    parser.add_argument(
+        "--text2image_edit_strength", type=float, default=0.4, help="Strength of the text2image edit (0.0-1.0)"
+    )
+    parser.add_argument(
+        "--video2world_edit_strength", type=float, default=0.8, help="Strength of the video2world edit (0.0-1.0)"
+    )
     return parser.parse_args()
+
 
 def setup_video2world_pipeline(args: argparse.Namespace, text_encoder=None):
     log.info(f"Using model size: {args.model_size}")
@@ -356,6 +366,7 @@ def setup_video2world_pipeline(args: argparse.Namespace, text_encoder=None):
         pipe.text_encoder = text_encoder
 
     return pipe
+
 
 def setup_text2image_pipeline(args: argparse.Namespace, text_encoder=None) -> Text2ImageSDEditPipeline:
     log.info(f"Using model size: {args.model_size}")
@@ -511,6 +522,7 @@ def process_single_image_generation(
         return True
     return False
 
+
 def process_single_video_generation(
     pipe: Video2WorldSDEditPipeline,
     input_path: str,
@@ -523,7 +535,7 @@ def process_single_video_generation(
     seed: int,
     benchmark: bool = False,
     use_cuda_graphs: bool = False,
-    edit_strength: float= 0.8,
+    edit_strength: float = 0.8,
     image_edit_strength: float = 0.4,
     input_video_path: str = "",
 ) -> bool:
@@ -542,8 +554,8 @@ def process_single_video_generation(
             start_time = time.time()
         video, input_video, prompt_used = pipe(
             prompt=prompt,
-            edit_strength=edit_strength,	
-	        input_video_path=input_video_path,
+            edit_strength=edit_strength,
+            input_video_path=input_video_path,
             negative_prompt=negative_prompt,
             aspect_ratio=aspect_ratio,
             input_path=input_path,
@@ -585,10 +597,10 @@ def process_single_video_generation(
         concatenated_path = concatenate_videos_with_title(
             output_video_path=output_path,
             input_video_path=input_video_save_path,
-            title=f'{prompt} (edit strength: img: {image_edit_strength}, vid: {edit_strength})',
-            fps=fps
+            title=f"{prompt} (edit strength: img: {image_edit_strength}, vid: {edit_strength})",
+            fps=fps,
         )
-        
+
         if concatenated_path:
             log.success(f"Successfully created concatenated video: {concatenated_path}")
 
@@ -655,7 +667,7 @@ def generate_first_frames(text2image_pipe: Text2ImageSDEditPipeline, args: argpa
                     use_cuda_graphs=args.use_cuda_graphs,
                     benchmark=args.benchmark,
                     edit_strength=args.text2image_edit_strength,
-	    input_video_path=args.input_video_path,
+                    input_video_path=args.input_video_path,
                 ):
                     # Save the item for the second stage
                     batch_items.append(
@@ -681,7 +693,7 @@ def generate_first_frames(text2image_pipe: Text2ImageSDEditPipeline, args: argpa
                 use_cuda_graphs=args.use_cuda_graphs,
                 benchmark=args.benchmark,
                 edit_strength=args.text2image_edit_strength,
-	            input_video_path=args.input_video_path,
+                input_video_path=args.input_video_path,
             ):
                 # Add single item to batch_items for consistent processing
                 batch_items.append(
@@ -707,6 +719,7 @@ def generate_first_frames(text2image_pipe: Text2ImageSDEditPipeline, args: argpa
         log.info(f"Rank {rank}: Synchronized after batch_items broadcast")
 
     return batch_items
+
 
 def generate_videos(video2world_pipe: Video2WorldSDEditPipeline, batch_items: list, args: argparse.Namespace) -> None:
     """

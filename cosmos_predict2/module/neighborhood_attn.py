@@ -69,29 +69,27 @@ class NeighborhoodAttention(nn.Module):
         self.is_causal = False if "is_causal" not in natten_parameters else natten_parameters["is_causal"]
 
         if not isinstance(self.window_size, Sequence) or len(self.window_size) != 3:
-            raise ValueError("Invalid window_size value. Expected an iterable of length 3, got " f"{self.window_size}.")
+            raise ValueError(f"Invalid window_size value. Expected an iterable of length 3, got {self.window_size}.")
 
         if (not isinstance(self.stride, Sequence) or len(self.stride) != 3) and not isinstance(self.stride, int):
-            raise ValueError(
-                "Invalid stride value. Expected an iterable of length 3, or integer, got " f"{self.stride}."
-            )
+            raise ValueError(f"Invalid stride value. Expected an iterable of length 3, or integer, got {self.stride}.")
 
         if (not isinstance(self.dilation, Sequence) or len(self.dilation) != 3) and not isinstance(self.dilation, int):
             raise ValueError(
-                "Invalid dilation value. Expected an iterable of length 3, or integer, got " f"{self.dilation}."
+                f"Invalid dilation value. Expected an iterable of length 3, or integer, got {self.dilation}."
             )
 
         if (not isinstance(self.is_causal, Sequence) or len(self.is_causal) != 3) and not isinstance(
             self.is_causal, bool
         ):
             raise ValueError(
-                "Invalid is_causal value. Expected an iterable of length 3, or boolean, got " f"{self.is_causal}."
+                f"Invalid is_causal value. Expected an iterable of length 3, or boolean, got {self.is_causal}."
             )
 
         self.base_size = None if "base_size" not in natten_parameters else natten_parameters["base_size"]
         if self.base_size is not None and (not isinstance(self.base_size, Sequence) or len(self.base_size) != 3):
             raise ValueError(
-                "Invalid base feature map size. Expected an iterable of length 3, or None, got " f"{self.base_size}."
+                f"Invalid base feature map size. Expected an iterable of length 3, or None, got {self.base_size}."
             )
 
         # Configurations
@@ -168,8 +166,7 @@ class NeighborhoodAttention(nn.Module):
     ):
         if not (q_B_L_H_D.shape == k_B_L_H_D.shape == v_B_L_H_D.shape):
             raise ValueError(
-                "NATTEN requires QKV shapes to match, got "
-                f"{q_B_L_H_D.shape=}, {k_B_L_H_D.shape=}, {v_B_L_H_D.shape=}."
+                f"NATTEN requires QKV shapes to match, got {q_B_L_H_D.shape=}, {k_B_L_H_D.shape=}, {v_B_L_H_D.shape=}."
             )
 
         device = q_B_L_H_D.device
@@ -178,7 +175,7 @@ class NeighborhoodAttention(nn.Module):
         is_cuda = torch.cuda.is_available() and torch.version.cuda and device.type == "cuda"
 
         if not is_cuda:
-            raise NotImplementedError("Cosmos-Predict2 + NATTEN requires CUDA, tensors were on " f"{device=}.")
+            raise NotImplementedError(f"Cosmos-Predict2 + NATTEN requires CUDA, tensors were on {device=}.")
 
         if compute_cap not in ALLOWED_COMPUTE_CAPS:
             raise NotImplementedError(
@@ -199,7 +196,7 @@ class NeighborhoodAttention(nn.Module):
         T, H, W = video_size
 
         if seqlen != T * H * W:
-            raise ValueError("Mismatch between seqlen and video_size dimensions; got " f"{video_size=}, {seqlen=}.")
+            raise ValueError(f"Mismatch between seqlen and video_size dimensions; got {video_size=}, {seqlen=}.")
 
         if T > 1:
             input_shape = (T, H, W)

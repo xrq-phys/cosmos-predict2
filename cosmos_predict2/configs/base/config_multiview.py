@@ -14,17 +14,25 @@
 # limitations under the License.
 
 
-from cosmos_predict2.configs.base.config_video2world import Video2WorldPipelineConfig
-from imaginaire.config import make_freezable
-import attrs
-from cosmos_predict2.conditioner import ConditionLocation, ReMapkey, TextAttr, BooleanFlag
-from cosmos_predict2.models.multiview_dit import MultiViewDiT
-from cosmos_predict2.conditioner import MultiViewConditioner
-from imaginaire.config import LazyDict
-from imaginaire.lazy_config import LazyCall as L
-from cosmos_predict2.models.text2image_dit import SACConfig
-from cosmos_predict2.configs.base.config_video2world import CosmosReason1Config, CosmosGuardrailConfig, EMAConfig, SolverTimestampConfig, TokenizerInterface, ConditioningStrategy
 from copy import deepcopy
+
+import attrs
+
+from cosmos_predict2.conditioner import BooleanFlag, ConditionLocation, MultiViewConditioner, ReMapkey, TextAttr
+from cosmos_predict2.configs.base.config_video2world import (
+    ConditioningStrategy,
+    CosmosGuardrailConfig,
+    CosmosReason1Config,
+    EMAConfig,
+    SolverTimestampConfig,
+    TokenizerInterface,
+    Video2WorldPipelineConfig,
+)
+from cosmos_predict2.models.multiview_dit import MultiViewDiT
+from cosmos_predict2.models.text2image_dit import SACConfig
+from imaginaire.config import LazyDict, make_freezable
+from imaginaire.lazy_config import LazyCall as L
+
 
 @make_freezable
 @attrs.define(slots=False)
@@ -61,7 +69,8 @@ class MultiviewPipelineConfig:
         order=7.0,
         is_forward=False,
     )
-    
+
+
 PREDICT2_MULTIVIEW_NET_2B_10FPS_7VIEWS_29FRAMES = L(MultiViewDiT)(
     max_img_h=240,
     max_img_w=240,
@@ -94,8 +103,8 @@ PREDICT2_MULTIVIEW_NET_2B_10FPS_7VIEWS_29FRAMES = L(MultiViewDiT)(
     state_t=8,
     n_cameras_emb=7,
     view_condition_dim=7,
-    concat_view_embedding=True
-)   
+    concat_view_embedding=True,
+)
 
 PREDICT2_MULTIVIEW_PIPELINE_2B_10FPS_7VIEWS_29FRAMES = MultiviewPipelineConfig(
     adjust_video_noise=True,
@@ -168,4 +177,6 @@ PREDICT2_MULTIVIEW_PIPELINE_2B_10FPS_7VIEWS_29FRAMES = MultiviewPipelineConfig(
     ),
 )
 
-PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES = deepcopy(PREDICT2_MULTIVIEW_PIPELINE_2B_10FPS_7VIEWS_29FRAMES)
+PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES = deepcopy(
+    PREDICT2_MULTIVIEW_PIPELINE_2B_10FPS_7VIEWS_29FRAMES
+)

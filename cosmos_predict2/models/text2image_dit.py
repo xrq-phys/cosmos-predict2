@@ -531,17 +531,17 @@ class VideoRopePosition3DEmb(VideoPositionEmb):
         temporal_freqs = 1.0 / (t_theta**self.dim_temporal_range)
 
         B, T, H, W, _ = B_T_H_W_C
-        assert (
-            H <= self.max_h and W <= self.max_w
-        ), f"Input dimensions (H={H}, W={W}) exceed the maximum dimensions (max_h={self.max_h}, max_w={self.max_w})"
+        assert H <= self.max_h and W <= self.max_w, (
+            f"Input dimensions (H={H}, W={W}) exceed the maximum dimensions (max_h={self.max_h}, max_w={self.max_w})"
+        )
         half_emb_h = torch.outer(self.seq[:H], h_spatial_freqs)
         half_emb_w = torch.outer(self.seq[:W], w_spatial_freqs)
 
         if self.enable_fps_modulation:
             uniform_fps = (fps is None) or (fps.min() == fps.max())
-            assert (
-                uniform_fps or B == 1 or T == 1
-            ), "For video batch, batch size should be 1 for non-uniform fps. For image batch, T should be 1"
+            assert uniform_fps or B == 1 or T == 1, (
+                "For video batch, batch size should be 1 for non-uniform fps. For image batch, T should be 1"
+            )
 
             # apply sequence scaling in temporal dimension
             if fps is None:  # image case
@@ -802,9 +802,9 @@ class PatchEmbed(nn.Module):
         """
         assert x.dim() == 5
         _, _, T, H, W = x.shape
-        assert (
-            H % self.spatial_patch_size == 0 and W % self.spatial_patch_size == 0
-        ), f"H,W {(H, W)} should be divisible by spatial_patch_size {self.spatial_patch_size}"
+        assert H % self.spatial_patch_size == 0 and W % self.spatial_patch_size == 0, (
+            f"H,W {(H, W)} should be divisible by spatial_patch_size {self.spatial_patch_size}"
+        )
         assert T % self.temporal_patch_size == 0
         x = self.proj(x)
         return x
@@ -871,8 +871,9 @@ class FinalLayer(nn.Module):
         else:
             shift_B_T_D, scale_B_T_D = self.adaln_modulation(emb_B_T_D).chunk(2, dim=-1)
 
-        shift_B_T_1_1_D, scale_B_T_1_1_D = rearrange(shift_B_T_D, "b t d -> b t 1 1 d"), rearrange(
-            scale_B_T_D, "b t d -> b t 1 1 d"
+        shift_B_T_1_1_D, scale_B_T_1_1_D = (
+            rearrange(shift_B_T_D, "b t d -> b t 1 1 d"),
+            rearrange(scale_B_T_D, "b t d -> b t 1 1 d"),
         )
 
         def _fn(
@@ -1428,9 +1429,9 @@ class MiniTrainDIT(WeightTrainingStat):
             timesteps: (B, ) tensor of timesteps
             crossattn_emb: (B, N, D) tensor of cross-attention embeddings
         """
-        assert isinstance(
-            data_type, DataType
-        ), f"Expected DataType, got {type(data_type)}. We need discuss this flag later."
+        assert isinstance(data_type, DataType), (
+            f"Expected DataType, got {type(data_type)}. We need discuss this flag later."
+        )
         assert not (self.training and use_cuda_graphs), "CUDA Graphs are supported only for inference"
         x_B_T_H_W_D, rope_emb_L_1_1_D, extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D = self.prepare_embedded_sequence(
             x_B_C_T_H_W,
@@ -1451,9 +1452,9 @@ class MiniTrainDIT(WeightTrainingStat):
         self.crossattn_emb = crossattn_emb
 
         if extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D is not None:
-            assert (
-                x_B_T_H_W_D.shape == extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D.shape
-            ), f"{x_B_T_H_W_D.shape} != {extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D.shape}"
+            assert x_B_T_H_W_D.shape == extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D.shape, (
+                f"{x_B_T_H_W_D.shape} != {extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D.shape}"
+            )
 
         if use_cuda_graphs:
             shapes_key = create_cuda_graph(

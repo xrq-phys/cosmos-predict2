@@ -402,4 +402,4 @@ This prompt includes both static scene elements and suggestions for motion that 
 - [Text2World Inference Guide](inference_text2world.md) - Generate videos directly from text prompts
 - [Setup Guide](setup.md) - Environment setup and checkpoint download instructions
 - [Performance Guide](performance.md) - Hardware requirements and optimization recommendations
-- [Training Cosmos-NeMo-Assets Guide](video2world_post-training_cosmos_nemo_assets.md) - Information on training on Cosmos-NeMo-Assets dataset.
+- [Training Cosmos-NeMo-Assets Guide](./post-training_text2image_cosmos_nemo_assets.md) - Information on training on Cosmos-NeMo-Assets dataset.

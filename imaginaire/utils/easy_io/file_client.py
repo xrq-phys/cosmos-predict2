@@ -92,12 +92,11 @@ class FileClient:
             backend = "disk"
         if backend is not None and backend not in cls._backends:
             raise ValueError(
-                f"Backend {backend} is not supported. Currently supported ones" f" are {list(cls._backends.keys())}"
+                f"Backend {backend} is not supported. Currently supported ones are {list(cls._backends.keys())}"
             )
         if prefix is not None and prefix not in cls._prefix_to_backends:
             raise ValueError(
-                f"prefix {prefix} is not supported. Currently supported ones "
-                f"are {list(cls._prefix_to_backends.keys())}"
+                f"prefix {prefix} is not supported. Currently supported ones are {list(cls._prefix_to_backends.keys())}"
             )
 
         # concatenate the arguments to a unique key for determining whether
@@ -185,14 +184,14 @@ class FileClient:
     @classmethod
     def _register_backend(cls, name, backend, force=False, prefixes=None):
         if not isinstance(name, str):
-            raise TypeError("the backend name should be a string, " f"but got {type(name)}")
+            raise TypeError(f"the backend name should be a string, but got {type(name)}")
         if not inspect.isclass(backend):
             raise TypeError(f"backend should be a class but got {type(backend)}")
         if not issubclass(backend, BaseStorageBackend):
             raise TypeError(f"backend {backend} is not a subclass of BaseStorageBackend")
         if not force and name in cls._backends:
             raise KeyError(
-                f"{name} is already registered as a storage backend, " 'add "force=True" if you want to override it'
+                f'{name} is already registered as a storage backend, add "force=True" if you want to override it'
             )
 
         if name in cls._backends and force:

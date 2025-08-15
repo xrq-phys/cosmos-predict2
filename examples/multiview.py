@@ -24,16 +24,19 @@ import time
 
 import torch
 from megatron.core import parallel_state
-from examples.video2world import cleanup_distributed, process_single_generation
+
 from cosmos_predict2.configs.base.config_multiview import (
     PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES,
 )
-from imaginaire.utils.io import save_image_or_video, save_text_prompts, save_image_or_video_multiview
-from imaginaire.utils import log, misc, distributed
 from cosmos_predict2.pipelines.multiview import MultiviewPipeline
+from examples.video2world import cleanup_distributed, process_single_generation
+from imaginaire.utils import distributed, log, misc
+from imaginaire.utils.io import save_image_or_video, save_image_or_video_multiview, save_text_prompts
+
 _DEFAULT_NEGATIVE_PROMPT = "The video captures a series of frames showing ugly scenes, static with no motion, motion blur, over-saturation, shaky footage, low resolution, grainy texture, pixelated images, poorly lit areas, underexposed and overexposed scenes, poor color balance, washed out colors, choppy sequences, jerky movements, low frame rate, artifacting, color banding, unnatural transitions, outdated special effects, fake elements, unconvincing visuals, poorly edited content, jump cuts, visual noise, and flickering. Overall, the video is of poor quality."
 
 _VIDEO_EXTENSIONS = [".mp4"]
+
 
 def validate_input_file(input_path: str, num_conditional_frames: int) -> bool:
     if not os.path.exists(input_path):
@@ -54,6 +57,7 @@ def validate_input_file(input_path: str, num_conditional_frames: int) -> bool:
         return False
 
     return True
+
 
 def setup_pipeline(args: argparse.Namespace, text_encoder=None):
     log.info(f"Using model size: {args.model_size}")
@@ -126,6 +130,7 @@ def setup_pipeline(args: argparse.Namespace, text_encoder=None):
         pipe.text_encoder = text_encoder
 
     return pipe
+
 
 def process_single_generation(
     pipe: MultiviewPipeline,
@@ -201,6 +206,7 @@ def process_single_generation(
         return True
     return False
 
+
 def generate_video(args: argparse.Namespace, pipe: MultiviewPipeline) -> None:
     if args.benchmark:
         log.warning(
@@ -256,8 +262,6 @@ def generate_video(args: argparse.Namespace, pipe: MultiviewPipeline) -> None:
         )
 
     return
-
-
 
 
 def parse_args() -> argparse.Namespace:
@@ -366,6 +370,7 @@ def parse_args() -> argparse.Namespace:
         help="Run Video2World + NATTEN (sparse attention variant).",
     )
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     args = parse_args()

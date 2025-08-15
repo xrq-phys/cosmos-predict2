@@ -48,9 +48,9 @@ class DTensorFastEmaModelUpdater:
         target_list = []
         source_list = []
         for tgt_params, src_params in zip(tgt_model.parameters(), src_model.parameters()):
-            assert (
-                tgt_params.dtype == torch.float32
-            ), f"EMA model only works in FP32 dtype, got {tgt_params.dtype} instead."
+            assert tgt_params.dtype == torch.float32, (
+                f"EMA model only works in FP32 dtype, got {tgt_params.dtype} instead."
+            )
             if isinstance(tgt_params, DTensor) and isinstance(src_params, DTensor):
                 target_list.append(tgt_params.to_local())
                 source_list.append(src_params.to_local().data)

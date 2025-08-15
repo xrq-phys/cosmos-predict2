@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gc
 import math
 import os
-import gc
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -305,9 +305,9 @@ class Video2WorldPipeline(BasePipeline):
 
         # 3. Set up tokenizer
         pipe.tokenizer = instantiate(config.tokenizer)
-        assert (
-            pipe.tokenizer.latent_ch == pipe.config.state_ch
-        ), f"latent_ch {pipe.tokenizer.latent_ch} != state_shape {pipe.config.state_ch}"
+        assert pipe.tokenizer.latent_ch == pipe.config.state_ch, (
+            f"latent_ch {pipe.tokenizer.latent_ch} != state_shape {pipe.config.state_ch}"
+        )
 
         # 4. Load text encoder
         if text_encoder_path:
@@ -319,9 +319,11 @@ class Video2WorldPipeline(BasePipeline):
                 # Keep original precision from checkpoint
                 text_encoder_dtype = None
 
-            pipe.text_encoder = CosmosT5TextEncoder(device=device, # device here must be final device used to run embedding
-                                                    cache_dir=text_encoder_path,
-                                                    torch_dtype=text_encoder_dtype)
+            pipe.text_encoder = CosmosT5TextEncoder(
+                device=device,  # device here must be final device used to run embedding
+                cache_dir=text_encoder_path,
+                torch_dtype=text_encoder_dtype,
+            )
             text_encoder_device = "cpu" if offload_text_encoder else device
             pipe.text_encoder.to(device=text_encoder_device)
         else:
@@ -330,9 +332,9 @@ class Video2WorldPipeline(BasePipeline):
 
         # 5. Initialize conditioner
         pipe.conditioner = instantiate(config.conditioner)
-        assert (
-            sum(p.numel() for p in pipe.conditioner.parameters() if p.requires_grad) == 0
-        ), "conditioner should not have learnable parameters"
+        assert sum(p.numel() for p in pipe.conditioner.parameters() if p.requires_grad) == 0, (
+            "conditioner should not have learnable parameters"
+        )
 
         if load_prompt_refiner:
             pipe.prompt_refiner = CosmosReason1(
@@ -467,7 +469,7 @@ class Video2WorldPipeline(BasePipeline):
     def encode_prompt(
         self, prompts: Union[str, List[str]], max_length: int = 512, return_mask: bool = False
     ) -> torch.Tensor:
-        offload_to_host = any([p.device.type == 'cpu' for p in self.text_encoder.parameters()])
+        offload_to_host = any([p.device.type == "cpu" for p in self.text_encoder.parameters()])
 
         if isinstance(prompts, str):
             prompts = [prompts]
@@ -516,9 +518,9 @@ class Video2WorldPipeline(BasePipeline):
             # Check if the data has already been normalized and avoid re-normalizing
             if IS_PREPROCESSED_KEY in data_batch and data_batch[IS_PREPROCESSED_KEY] is True:
                 assert torch.is_floating_point(data_batch[input_key]), "Video data is not in float format."
-                assert torch.all(
-                    (data_batch[input_key] >= -1.0001) & (data_batch[input_key] <= 1.0001)
-                ), f"Video data is not in the range [-1, 1]. get data range [{data_batch[input_key].min()}, {data_batch[input_key].max()}]"
+                assert torch.all((data_batch[input_key] >= -1.0001) & (data_batch[input_key] <= 1.0001)), (
+                    f"Video data is not in the range [-1, 1]. get data range [{data_batch[input_key].min()}, {data_batch[input_key].max()}]"
+                )
             else:
                 assert data_batch[input_key].dtype == torch.uint8, "Video data is not in uint8 format."
                 data_batch[input_key] = data_batch[input_key].to(**self.tensor_kwargs) / 127.5 - 1.0
@@ -546,9 +548,9 @@ class Video2WorldPipeline(BasePipeline):
         if input_key in data_batch:
             # Check if the data has already been augmented and avoid re-augmenting
             if IS_PREPROCESSED_KEY in data_batch and data_batch[IS_PREPROCESSED_KEY] is True:
-                assert (
-                    data_batch[input_key].shape[2] == 1
-                ), f"Image data is claimed be augmented while its shape is {data_batch[input_key].shape}"
+                assert data_batch[input_key].shape[2] == 1, (
+                    f"Image data is claimed be augmented while its shape is {data_batch[input_key].shape}"
+                )
                 return
             else:
                 data_batch[input_key] = rearrange(data_batch[input_key], "b c h w -> b c 1 h w").contiguous()
@@ -623,9 +625,9 @@ class Video2WorldPipeline(BasePipeline):
         """
         is_image = self.input_image_key in data_batch
         is_video = self.input_video_key in data_batch
-        assert (
-            is_image != is_video
-        ), "Only one of the input_image_key or input_video_key should be present in the data_batch."
+        assert is_image != is_video, (
+            "Only one of the input_image_key or input_video_key should be present in the data_batch."
+        )
         return is_image
 
     def denoise(
@@ -775,9 +777,9 @@ class Video2WorldPipeline(BasePipeline):
         _, uncondition, _, _ = self.broadcast_split_for_model_parallelsim(x0, uncondition, None, None)
 
         if not parallel_state.is_initialized():
-            assert (
-                not self.dit.is_context_parallel_enabled
-            ), "parallel_state is not initialized, context parallel should be turned off."
+            assert not self.dit.is_context_parallel_enabled, (
+                "parallel_state is not initialized, context parallel should be turned off."
+            )
 
         def x0_fn(noise_x: torch.Tensor, sigma: torch.Tensor) -> torch.Tensor:
             cond_x0 = self.denoise(noise_x, sigma, condition, use_cuda_graphs=use_cuda_graphs).x0

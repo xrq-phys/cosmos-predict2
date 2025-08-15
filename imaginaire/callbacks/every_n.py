@@ -82,5 +82,4 @@ class EveryN(Callback):
         output_batch: dict[str, torch.Tensor],
         loss: torch.Tensor,
         iteration: int,
-    ) -> None:
-        ...
+    ) -> None: ...

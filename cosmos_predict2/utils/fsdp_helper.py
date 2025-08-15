@@ -137,7 +137,7 @@ def hsdp_device_mesh(replica_group_size=None, sharding_group_size=None, device=N
 
     if world_size % sharding_group_size != 0:
         raise ValueError(
-            f"World size {world_size} is not evenly divisible by " f"sharding group size {sharding_group_size}."
+            f"World size {world_size} is not evenly divisible by sharding group size {sharding_group_size}."
         )
 
     if (world_size // sharding_group_size) % replica_group_size != 0:

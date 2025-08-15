@@ -177,9 +177,9 @@ class Dataset:
         dataset.append(skip_keys)
         # Building augmentors
         augmentor_cfg = getattr(self.config, "augmentation", None)
-        assert isinstance(
-            augmentor_cfg, (dict, omegaconf.dictconfig.DictConfig)
-        ), f"getting type: {type(augmentor_cfg)}"
+        assert isinstance(augmentor_cfg, (dict, omegaconf.dictconfig.DictConfig)), (
+            f"getting type: {type(augmentor_cfg)}"
+        )
         augmentation_fn = self.build_data_augmentor(augmentor_cfg)
         dataset.append(augmentation_fn)
 

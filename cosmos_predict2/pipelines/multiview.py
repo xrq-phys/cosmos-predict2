@@ -19,18 +19,23 @@ from typing import Any, Callable, Dict, Tuple
 
 import numpy as np
 import torch
+import torch.distributed as dist
 import torchvision
 from einops import rearrange
 from megatron.core import parallel_state
-from tqdm import tqdm
 from torch.distributed import get_process_group_ranks
-import torch.distributed as dist
+from tqdm import tqdm
+
 from cosmos_predict2.auxiliary.cosmos_reason1 import CosmosReason1
 from cosmos_predict2.auxiliary.text_encoder import CosmosT5TextEncoder
 from cosmos_predict2.conditioner import DataType, TextCondition
+from cosmos_predict2.configs.base.config_multiview import (
+    MultiviewPipelineConfig,
+)
 from cosmos_predict2.datasets.utils import VIDEO_RES_SIZE_INFO
 from cosmos_predict2.models.utils import init_weights_on_device, load_state_dict
 from cosmos_predict2.module.denoiser_scaling import RectifiedFlowScaling
+from cosmos_predict2.pipelines.video2world import Video2WorldPipeline
 from cosmos_predict2.schedulers.rectified_flow_scheduler import (
     RectifiedFlowAB2Scheduler,
 )
@@ -43,10 +48,6 @@ from imaginaire.lazy_config import instantiate
 from imaginaire.utils import log, misc
 from imaginaire.utils.easy_io import easy_io
 from imaginaire.utils.ema import FastEmaModelUpdater
-from cosmos_predict2.pipelines.video2world import Video2WorldPipeline
-from cosmos_predict2.configs.base.config_multiview import (
-    MultiviewPipelineConfig,
-)
 
 _VIDEO_EXTENSIONS = [".mp4"]
 NUM_CONDITIONAL_FRAMES_KEY: str = "num_conditional_frames"
@@ -104,7 +105,9 @@ def read_and_process_multiview_video(
 
     # Calculate how many frames to extract from input video
     frames_to_extract_per_view = 4 * (num_latent_conditional_frames - 1) + 1 if num_latent_conditional_frames > 0 else 0
-    log.info(f"Will extract the last {frames_to_extract_per_view} frames from input video and pad to {num_video_frames}")
+    log.info(
+        f"Will extract the last {frames_to_extract_per_view} frames from input video and pad to {num_video_frames}"
+    )
 
     # Validate num_latent_conditional_frames
     if num_latent_conditional_frames not in [0, 1, 2]:
@@ -114,7 +117,7 @@ def read_and_process_multiview_video(
         raise ValueError(
             f"Video has only {available_frames_per_view} frames per view but needs at least {frames_to_extract_per_view} frames for num_latent_conditional_frames={num_latent_conditional_frames}"
         )
-        
+
     # Pre-allocate tensor with target dimensions and directly in uint8 format
     # This avoids allocating a large float tensor that would be converted later
     full_video = torch.zeros((num_video_frames, C, H, W), dtype=torch.uint8, device=video_tensor.device)
@@ -124,7 +127,9 @@ def read_and_process_multiview_video(
         video_tensor = rearrange(video_tensor, "c (v t) h w -> c v t h w", v=n_views)
         start_idx = available_frames_per_view - frames_to_extract_per_view
         extracted_frames = video_tensor[:, :, start_idx:, :, :]  # (C, V, frames_to_extract_per_view, H, W)
-        extracted_frames = rearrange(extracted_frames, "c v t h w -> c (v t) h w") # (C, V*frames_to_extract_per_view, H, W)
+        extracted_frames = rearrange(
+            extracted_frames, "c v t h w -> c (v t) h w"
+        )  # (C, V*frames_to_extract_per_view, H, W)
 
         # Convert to (V*frames_to_extract, C, H, W) for resize
         extracted_frames = extracted_frames.permute(1, 0, 2, 3)  # (V*frames_to_extract, C, H, W)
@@ -143,10 +148,8 @@ def read_and_process_multiview_video(
             extracted_frames = torchvision.transforms.functional.resize(extracted_frames, resizing_shape)
             extracted_frames = torchvision.transforms.functional.center_crop(extracted_frames, resolution)
 
-
         # Get final dimensions
         C, H, W = extracted_frames.shape[1], extracted_frames.shape[2], extracted_frames.shape[3]
-
 
         full_video_v_t_c_h_w = rearrange(full_video, "(v t) c h w -> v t c h w", v=n_views)
         extracted_frames_v_t_c_h_w = rearrange(extracted_frames, "(v t) c h w -> v t c h w", v=n_views)
@@ -203,9 +206,9 @@ class MultiviewPipeline(Video2WorldPipeline):
 
         # 3. Set up tokenizer
         pipe.tokenizer = instantiate(config.tokenizer)
-        assert (
-            pipe.tokenizer.latent_ch == pipe.config.state_ch
-        ), f"latent_ch {pipe.tokenizer.latent_ch} != state_shape {pipe.config.state_ch}"
+        assert pipe.tokenizer.latent_ch == pipe.config.state_ch, (
+            f"latent_ch {pipe.tokenizer.latent_ch} != state_shape {pipe.config.state_ch}"
+        )
 
         # 4. Load text encoder
         if text_encoder_path:
@@ -218,9 +221,9 @@ class MultiviewPipeline(Video2WorldPipeline):
 
         # 5. Initialize conditioner
         pipe.conditioner = instantiate(config.conditioner)
-        assert (
-            sum(p.numel() for p in pipe.conditioner.parameters() if p.requires_grad) == 0
-        ), "conditioner should not have learnable parameters"
+        assert sum(p.numel() for p in pipe.conditioner.parameters() if p.requires_grad) == 0, (
+            "conditioner should not have learnable parameters"
+        )
 
         if load_prompt_refiner:
             pipe.prompt_refiner = CosmosReason1(
@@ -293,8 +296,13 @@ class MultiviewPipeline(Video2WorldPipeline):
         return pipe
 
     def _get_data_batch_input(
-        self, video: torch.Tensor, prompt: str, negative_prompt: str = "", num_latent_conditional_frames: int = 1, 
-        n_views: int = 1, fps: int = 30
+        self,
+        video: torch.Tensor,
+        prompt: str,
+        negative_prompt: str = "",
+        num_latent_conditional_frames: int = 1,
+        n_views: int = 1,
+        fps: int = 30,
     ):
         """
         Prepares the input data batch for the diffusion model.
@@ -313,24 +321,30 @@ class MultiviewPipeline(Video2WorldPipeline):
             dict: A dictionary containing the prepared data batch, moved to the correct device and dtype.
         """
         B, C, T, H, W = video.shape
-        t5_text_embeddings = torch.zeros(B, n_views*512, 1024,dtype=self.torch_dtype).to(self.device)
+        t5_text_embeddings = torch.zeros(B, n_views * 512, 1024, dtype=self.torch_dtype).to(self.device)
         if prompt.endswith(".txt"):
             prompts = open(prompt, "r").read().splitlines()
-            assert len(prompts) == n_views, f"Number of prompts {len(prompts)} should be equal to number of views {n_views}"
+            assert len(prompts) == n_views, (
+                f"Number of prompts {len(prompts)} should be equal to number of views {n_views}"
+            )
             for i, prompt in enumerate(prompts):
                 if i != 0:
                     log.info(f"prompt for view {i} will not be used, skipping")
                     continue
                 log.info(f"{i}. encode prompt: {prompt}")
-                t5_text_embeddings[:, i*512:(i+1)*512] = self.encode_prompt(prompt).to(dtype=self.torch_dtype).to(self.device)
+                t5_text_embeddings[:, i * 512 : (i + 1) * 512] = (
+                    self.encode_prompt(prompt).to(dtype=self.torch_dtype).to(self.device)
+                )
         elif prompt.endswith(".pt"):
             t5_text_embeddings = torch.load(prompt)
-            assert t5_text_embeddings.shape[1] == n_views * 512, f"t5_text_embeddings.shape[1] {t5_text_embeddings.shape[1]} should be {n_views * 512}"
+            assert t5_text_embeddings.shape[1] == n_views * 512, (
+                f"t5_text_embeddings.shape[1] {t5_text_embeddings.shape[1]} should be {n_views * 512}"
+            )
         else:
             t5_text_embeddings[:, 0:512] = self.encode_prompt(prompt).to(dtype=self.torch_dtype).to(self.device)
         latent_view_indices_T = torch.repeat_interleave(torch.arange(n_views), self.config.state_t)
         latent_view_indices_B_T = latent_view_indices_T.unsqueeze(0).expand(B, -1).to(self.device)
-        
+
         data_batch = {
             "sample_n_views": n_views,
             "latent_view_indices_B_T": latent_view_indices_B_T,
@@ -338,7 +352,7 @@ class MultiviewPipeline(Video2WorldPipeline):
             "dataset_name": "video_data",
             "video": video,
             "t5_text_embeddings": t5_text_embeddings,
-            "fps": fps*torch.ones(B).to(self.device),
+            "fps": fps * torch.ones(B).to(self.device),
             "padding_mask": torch.zeros(B, 1, H, W).to(self.device),
             "num_conditional_frames": num_latent_conditional_frames,
         }
@@ -346,7 +360,7 @@ class MultiviewPipeline(Video2WorldPipeline):
         # Handle negative prompts for classifier-free guidance
         if negative_prompt:
             log.warning(f"Negative prompt is only applied to the first view")
-            neg_t5_text_embeddings = torch.zeros(B, n_views*512, 1024,dtype=self.torch_dtype).to(self.device)
+            neg_t5_text_embeddings = torch.zeros(B, n_views * 512, 1024, dtype=self.torch_dtype).to(self.device)
             neg_t5_text_embeddings[:, 0:512] = self.encode_prompt(negative_prompt).to(dtype=self.torch_dtype)
             data_batch["neg_t5_text_embeddings"] = neg_t5_text_embeddings
 
@@ -416,7 +430,7 @@ class MultiviewPipeline(Video2WorldPipeline):
         dist.all_gather(decoded_state_list, decoded_state, group=cp_group)
         decoded_state = torch.cat(decoded_state_list[0:n_views], dim=2)  # [B, C, V * T, H, W]
         return decoded_state
-    
+
     def _normalize_video_databatch_inplace(self, data_batch: dict[str, torch.Tensor], input_key: str = None) -> None:
         input_key = self.input_video_key if input_key is None else input_key
         if input_key in data_batch:
@@ -439,14 +453,16 @@ class MultiviewPipeline(Video2WorldPipeline):
         if cp_size > 1 and n_views > 1:
             x0_B_C_T_H_W = rearrange(x0_B_C_T_H_W, "B C (V T) H W -> (B V) C T H W", V=n_views).contiguous()
             if epsilon_B_C_T_H_W is not None:
-                epsilon_B_C_T_H_W = rearrange(epsilon_B_C_T_H_W, "B C (V T) H W -> (B V) C T H W", V=n_views).contiguous()
+                epsilon_B_C_T_H_W = rearrange(
+                    epsilon_B_C_T_H_W, "B C (V T) H W -> (B V) C T H W", V=n_views
+                ).contiguous()
             reshape_sigma_B_T = False
             if sigma_B_T is not None:
                 assert sigma_B_T.ndim == 2, "sigma_B_T should be 2D tensor"
                 if sigma_B_T.shape[-1] != 1:
-                    assert (
-                        sigma_B_T.shape[-1] % n_views == 0
-                    ), f"sigma_B_T temporal dimension T must either be 1 or a multiple of sample_n_views. Got T={sigma_B_T.shape[-1]} and sample_n_views={n_views}"
+                    assert sigma_B_T.shape[-1] % n_views == 0, (
+                        f"sigma_B_T temporal dimension T must either be 1 or a multiple of sample_n_views. Got T={sigma_B_T.shape[-1]} and sample_n_views={n_views}"
+                    )
                     sigma_B_T = rearrange(sigma_B_T, "B (V T) -> (B V) T", V=n_views).contiguous()
                     reshape_sigma_B_T = True
             x0_B_C_T_H_W, condition, epsilon_B_C_T_H_W, sigma_B_T = super().broadcast_split_for_model_parallelsim(
@@ -458,7 +474,6 @@ class MultiviewPipeline(Video2WorldPipeline):
             if reshape_sigma_B_T:
                 sigma_B_T = rearrange(sigma_B_T, "(B V) T -> B (V T)", V=n_views)
         return x0_B_C_T_H_W, condition, epsilon_B_C_T_H_W, sigma_B_T
-
 
     def get_data_and_condition(
         self, data_batch: dict[str, torch.Tensor]
@@ -551,9 +566,9 @@ class MultiviewPipeline(Video2WorldPipeline):
         _, uncondition, _, _ = self.broadcast_split_for_model_parallelsim(x0, uncondition, None, None)
 
         if not parallel_state.is_initialized():
-            assert (
-                not self.dit.is_context_parallel_enabled
-            ), "parallel_state is not initialized, context parallel should be turned off."
+            assert not self.dit.is_context_parallel_enabled, (
+                "parallel_state is not initialized, context parallel should be turned off."
+            )
 
         def x0_fn(noise_x: torch.Tensor, sigma: torch.Tensor) -> torch.Tensor:
             cond_x0 = self.denoise(noise_x, sigma, condition).x0
@@ -562,16 +577,13 @@ class MultiviewPipeline(Video2WorldPipeline):
 
             if "guided_image" in data_batch:
                 # replacement trick that enables inpainting with base model
-                assert (
-                    "guided_mask" in data_batch
-                ), "guided_mask should be in data_batch if guided_image is present"
+                assert "guided_mask" in data_batch, "guided_mask should be in data_batch if guided_image is present"
                 guide_image = data_batch["guided_image"]
                 guide_mask = data_batch["guided_mask"]
                 raw_x0 = guide_mask * guide_image + (1 - guide_mask) * raw_x0
             return raw_x0
 
         return x0_fn
-
 
     @torch.no_grad()
     def __call__(
@@ -583,7 +595,7 @@ class MultiviewPipeline(Video2WorldPipeline):
         num_conditional_frames: int = 1,
         guidance: float = 7.0,
         n_views: int = 1,
-        fps: int = 30, 
+        fps: int = 30,
         num_sampling_step: int = 35,
         seed: int = 0,
         use_cuda_graphs: bool = False,
@@ -593,7 +605,9 @@ class MultiviewPipeline(Video2WorldPipeline):
         width, height = VIDEO_RES_SIZE_INFO[self.config.resolution][aspect_ratio]
         height, width = self.check_resize_height_width(height, width)
         assert num_conditional_frames in [0, 1, 5], "num_conditional_frames must be 0, 1 or 5"
-        num_latent_conditional_frames = self.tokenizer.get_latent_num_frames(num_conditional_frames) if num_conditional_frames > 0 else 0
+        num_latent_conditional_frames = (
+            self.tokenizer.get_latent_num_frames(num_conditional_frames) if num_conditional_frames > 0 else 0
+        )
 
         # Run text guardrail on the prompt
         if self.text_guardrail_runner is not None:
@@ -644,16 +658,24 @@ class MultiviewPipeline(Video2WorldPipeline):
         if ext in _VIDEO_EXTENSIONS:
             # Always use video reading for video files, regardless of num_latent_conditional_frames
             vid_input = read_and_process_multiview_video(
-                input_path, [height, width], num_video_frames, num_latent_conditional_frames, resize=True, n_views=n_views
+                input_path,
+                [height, width],
+                num_video_frames,
+                num_latent_conditional_frames,
+                resize=True,
+                n_views=n_views,
             )
         else:
-            raise ValueError(
-                f"Unsupported file extension: {ext}. Supported extensions are {_VIDEO_EXTENSIONS}"
-            )
+            raise ValueError(f"Unsupported file extension: {ext}. Supported extensions are {_VIDEO_EXTENSIONS}")
 
         # Prepare the data batch with text embeddings
         data_batch = self._get_data_batch_input(
-            vid_input, prompt, negative_prompt, num_latent_conditional_frames=num_latent_conditional_frames, n_views=n_views, fps=fps
+            vid_input,
+            prompt,
+            negative_prompt,
+            num_latent_conditional_frames=num_latent_conditional_frames,
+            n_views=n_views,
+            fps=fps,
         )
 
         # preprocess
@@ -732,7 +754,7 @@ class MultiviewPipeline(Video2WorldPipeline):
         # Merge context-parallel chunks back together if needed.
         if self.dit.is_context_parallel_enabled:
             cp_group = self.get_context_parallel_group()
-            cp_size = 1 if cp_group is None else cp_group.size()            
+            cp_size = 1 if cp_group is None else cp_group.size()
             samples = cat_outputs_cp(samples, seq_dim=2, cp_group=cp_group)
             if n_views > 1:
                 samples = rearrange(
@@ -772,7 +794,6 @@ class MultiviewPipeline(Video2WorldPipeline):
         else:
             return video
 
-
     @torch.no_grad()
     def generate_samples_from_batch(
         self,
@@ -785,15 +806,12 @@ class MultiviewPipeline(Video2WorldPipeline):
         num_steps: int = 35,
         num_conditional_frames: int = 1,
     ) -> torch.Tensor | None:
-
         n_views = data_batch[SAMPLE_N_VIEWS_KEY]
         log.info(f"Generating {n_sample} samples with {num_conditional_frames=} and {n_views=}")
         # preprocess
         self._normalize_video_databatch_inplace(data_batch)
         self._augment_image_dim_inplace(data_batch)
-        x0_fn = self.get_x0_fn_from_batch(
-            data_batch, guidance, is_negative_prompt=is_negative_prompt
-        )
+        x0_fn = self.get_x0_fn_from_batch(data_batch, guidance, is_negative_prompt=is_negative_prompt)
 
         log.info("Starting video generation...")
 
@@ -853,7 +871,7 @@ class MultiviewPipeline(Video2WorldPipeline):
         # Merge context-parallel chunks back together if needed.
         if self.dit.is_context_parallel_enabled:
             cp_group = self.get_context_parallel_group()
-            cp_size = 1 if cp_group is None else cp_group.size()            
+            cp_size = 1 if cp_group is None else cp_group.size()
             samples = cat_outputs_cp(samples, seq_dim=2, cp_group=cp_group)
             if n_views > 1:
                 samples = rearrange(

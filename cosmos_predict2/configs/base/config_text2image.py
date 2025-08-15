@@ -18,7 +18,7 @@ import attrs
 from cosmos_predict2.conditioner import ReMapkey, TextAttr, TextConditioner, VideoConditioner
 from cosmos_predict2.configs.base.defaults.ema import EMAConfig
 from cosmos_predict2.models.text2image_dit import MiniTrainDIT
-from cosmos_predict2.tokenizers.tokenizer import TokenizerInterface, CosmosImageTokenizer
+from cosmos_predict2.tokenizers.tokenizer import CosmosImageTokenizer, TokenizerInterface
 from imaginaire.config import make_freezable
 from imaginaire.lazy_config import LazyCall as L
 from imaginaire.lazy_config import LazyDict
