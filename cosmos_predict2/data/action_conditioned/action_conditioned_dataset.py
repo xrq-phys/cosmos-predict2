@@ -172,7 +172,7 @@ class ActionConditionedDataset(Dataset):
 
     def _load_and_process_ann_file(self, ann_file):
         samples = []
-        with open(ann_file, "r") as f:
+        with open(ann_file) as f:
             ann = json.load(f)
 
         n_frames = len(ann["state"])
@@ -337,7 +337,7 @@ class ActionConditionedDataset(Dataset):
             sample = self.samples[index]
             ann_file = sample["ann_file"]
             frame_ids = sample["frame_ids"]
-            with open(ann_file, "r") as f:
+            with open(ann_file) as f:
                 label = json.load(f)
             arm_states, gripper_states = self._get_robot_states(label, frame_ids)
             actions = self._get_actions(arm_states, gripper_states, self.accumulate_action)
@@ -376,12 +376,12 @@ class ActionConditionedDataset(Dataset):
 
             return data
         except Exception:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 f"Invalid data encountered: {self.samples[index]['ann_file']}. Skipped "
                 f"(by randomly sampling another sample in the same dataset)."
             )
-            warnings.warn("FULL TRACEBACK:")
-            warnings.warn(traceback.format_exc())
+            warnings.warn("FULL TRACEBACK:")  # noqa: B028
+            warnings.warn(traceback.format_exc())  # noqa: B028
             self.wrong_number += 1
             print(self.wrong_number)
             return self[np.random.randint(len(self.samples))]

@@ -20,9 +20,9 @@ from imaginaire.utils.easy_io.backends.registry_utils import backends, prefix_to
 
 __all__ = [
     "BaseStorageBackend",
-    "LocalBackend",
     "HTTPBackend",
-    "register_backend",
+    "LocalBackend",
     "backends",
     "prefix_to_backends",
+    "register_backend",
 ]

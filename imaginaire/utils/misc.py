@@ -22,9 +22,10 @@ import json
 import os
 import random
 import time
+from collections.abc import Callable
 from contextlib import ContextDecorator
 from dataclasses import fields
-from typing import Any, Callable, List, Tuple, TypeVar, Union
+from typing import Any, TypeVar
 
 import numpy as np
 import termcolor
@@ -70,11 +71,8 @@ def to(
         "at least one of device, dtype, memory_format should be specified"
     )
     if isinstance(data, torch.Tensor):
-        if (
-            memory_format == torch.channels_last
-            and data.dim() != 4
-            or memory_format == torch.channels_last_3d
-            and data.dim() != 5
+        if (memory_format == torch.channels_last and data.dim() != 4) or (
+            memory_format == torch.channels_last_3d and data.dim() != 5
         ):
             memory_format = torch.preserve_format  # do not change the memory format
         is_cpu = (isinstance(device, str) and device == "cpu") or (
@@ -145,7 +143,7 @@ def set_random_seed(seed: int, by_rank: bool = False) -> None:
 
 
 def arch_invariant_rand(
-    shape: List[int] | Tuple[int], dtype: torch.dtype, device: str | torch.device, seed: int | None = None
+    shape: list[int] | tuple[int], dtype: torch.dtype, device: str | torch.device, seed: int | None = None
 ):
     """Produce a GPU-architecture-invariant randomized Torch tensor.
 
@@ -178,7 +176,7 @@ def get_data_batch_size(data: dict[str, torch.Tensor] | torch.Tensor) -> int:
         batch_size (int): Data batch size.
     """
 
-    def _get_batch_size(input_data: Any) -> Union[int, None]:
+    def _get_batch_size(input_data: Any) -> int | None:
         """
         Helper function that recursively finds a tensor in the input data
         (could be a nested dictionary) and returns its batch size.
@@ -186,7 +184,7 @@ def get_data_batch_size(data: dict[str, torch.Tensor] | torch.Tensor) -> int:
         if isinstance(input_data, torch.Tensor):
             return len(input_data)
         elif isinstance(input_data, collections.abc.Mapping):
-            for key, value in input_data.items():
+            for key, value in input_data.items():  # noqa: B007
                 batch_size = _get_batch_size(value)
                 if batch_size is not None:
                     return batch_size
@@ -225,7 +223,7 @@ def parameters_to_buffer(module: torch.nn.Module, persistent: bool = True):
 T = TypeVar("T", bound=Callable[..., Any])
 
 
-class timer(ContextDecorator):  # noqa: N801
+class timer(ContextDecorator):
     """Simple timer for timing the execution of code.
 
     It can be used as either a context manager or a function decorator. The timing result will be logged upon exit.
@@ -249,7 +247,7 @@ class timer(ContextDecorator):  # noqa: N801
     def __enter__(self) -> None:
         self.tic = time.time()
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         time_spent = time.time() - self.tic
         if self.debug:
             log.debug(f"Time spent on {self.context}: {time_spent:.4f} seconds")
@@ -258,7 +256,7 @@ class timer(ContextDecorator):  # noqa: N801
 
     def __call__(self, func: T) -> T:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):  # noqa: ANN202
+        def wrapper(*args, **kwargs):
             tic = time.time()
             result = func(*args, **kwargs)
             time_spent = time.time() - tic
@@ -271,7 +269,7 @@ class timer(ContextDecorator):  # noqa: N801
         return wrapper  # type: ignore
 
 
-class memory_checker(ContextDecorator):  # noqa: N801
+class memory_checker(ContextDecorator):
     """Simple memory checker for a given block of code.
 
     It can be used as either a context manager or a function decorator. The memory usage will be logged upon exit.
@@ -297,7 +295,7 @@ class memory_checker(ContextDecorator):  # noqa: N801
         torch.cuda.reset_peak_memory_stats()
         self.initial_memory = torch.cuda.max_memory_allocated()
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         torch.cuda.synchronize()
         final_memory = torch.cuda.max_memory_allocated()
         message = f"Memory used within {self.context}: {(final_memory - self.initial_memory) / 1024**3:.4f} GB"
@@ -308,7 +306,7 @@ class memory_checker(ContextDecorator):  # noqa: N801
 
     def __call__(self, func: T) -> T:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):  # noqa: ANN202
+        def wrapper(*args, **kwargs):
             torch.cuda.synchronize()
             torch.cuda.reset_peak_memory_stats()
             initial_memory = torch.cuda.max_memory_allocated()
@@ -357,7 +355,7 @@ class TrainingTimer:
         self.start_time.append(time.time())
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         end_time = time.time()
         result = end_time - self.start_time.pop()
         key = self.func_stack.pop()

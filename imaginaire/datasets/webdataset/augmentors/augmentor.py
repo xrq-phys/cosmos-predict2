@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable
-from typing import Any, Generator, Optional
+from collections.abc import Generator, Iterable
+from typing import Any
 
 
 class Augmentor:
-    def __init__(self, input_keys: list, output_keys: Optional[list] = None, args: Optional[dict] = None) -> None:
+    def __init__(self, input_keys: list, output_keys: list | None = None, args: dict | None = None) -> None:
         r"""Base augmentor class
 
         Args:
@@ -35,7 +35,7 @@ class Augmentor:
 
 
 class IterableAugmentor:
-    def __init__(self, input_keys: list, output_keys: Optional[list] = None, args: Optional[dict] = None) -> None:
+    def __init__(self, input_keys: list, output_keys: list | None = None, args: dict | None = None) -> None:
         r"""Base augmentor class
 
         Args:

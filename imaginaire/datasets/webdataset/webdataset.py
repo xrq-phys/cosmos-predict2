@@ -14,9 +14,8 @@
 # limitations under the License.
 
 import pickle
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import partial
-from typing import Callable
 
 import omegaconf
 import webdataset as wds
@@ -79,7 +78,7 @@ class Dataset:
             # For each dataset, we parse the file paths and store them as a list of TarSample.
             # TarSample will then be used by each worker to load the data.
 
-            dset_id = "dset: {}".format(dset_num)
+            dset_id = f"dset: {dset_num}"
 
             # Read all wdinfo files and obtain the DataSample list
             for wdinfo_path in dset_info.wdinfo:
@@ -187,7 +186,7 @@ class Dataset:
         dataset.append(update_url)
 
         dataset.total_images = self.wdinfo.total_key_count  # type: ignore
-        log.info("Total number of training shards: %d" % num_tars)
-        log.info("Total training key count: %d" % dataset.total_images)  # type: ignore
+        log.info("Total number of training shards: %d" % num_tars)  # noqa: UP031
+        log.info("Total training key count: %d" % dataset.total_images)  # type: ignore  # noqa: UP031
 
         return dataset

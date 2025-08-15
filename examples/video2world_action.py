@@ -33,7 +33,7 @@ from imaginaire.utils.io import save_image_or_video
 
 
 def get_action_sequence(annotation_path):
-    with open(annotation_path, "r") as file:
+    with open(annotation_path) as file:
         data = json.load(file)
 
     # rescale the action to the original scale

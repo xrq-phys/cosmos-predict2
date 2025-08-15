@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import IO, Any, Dict, Tuple
+from typing import IO, Any
 
 import imageio
 import imageio.v3 as iio_v3
@@ -29,7 +29,7 @@ class ImageioVideoHandler(BaseFileHandler):
 
     def load_from_fileobj(
         self, file: IO[bytes], format: str = "mp4", mode: str = "rgb", **kwargs
-    ) -> Tuple[np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Load video from a file-like object using imageio.v3 with specified format and color mode.
 
@@ -69,7 +69,7 @@ class ImageioVideoHandler(BaseFileHandler):
 
         return video_frames, metadata
 
-    def _extract_metadata(self, file: IO[bytes], plugin: str = "pyav") -> Dict[str, Any]:
+    def _extract_metadata(self, file: IO[bytes], plugin: str = "pyav") -> dict[str, Any]:
         """
         Extract metadata from a video file.
 

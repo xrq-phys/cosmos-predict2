@@ -47,7 +47,6 @@ _DEFAULT_POSITIVE_PROMPT = "A point-of-view video shot from inside a vehicle, ca
 
 
 import os
-import textwrap
 
 import numpy as np
 import torch
@@ -640,7 +639,7 @@ def generate_first_frames(text2image_pipe: Text2ImageSDEditPipeline, args: argpa
         if args.batch_input_json is not None:
             # Process batch inputs from JSON file
             log.info(f"Loading batch inputs from JSON file: {args.batch_input_json}")
-            with open(args.batch_input_json, "r") as f:
+            with open(args.batch_input_json) as f:
                 batch_inputs = json.load(f)
 
             # Generate all the first frames first

@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
 
 import torch
 from torch import Tensor
@@ -86,7 +85,7 @@ def cat_outputs_cp(x: Tensor, seq_dim: int, cp_group: ProcessGroup) -> Tensor:
     try:
         all_gather(gathered_tensors, x, group=cp_group)
     except RuntimeError as e:
-        raise RuntimeError(f"Failed to gather tensors: {e}")
+        raise RuntimeError(f"Failed to gather tensors: {e}")  # noqa: B904
 
     # Concatenate the gathered tensors along the specified dimension
     return torch.cat(gathered_tensors, dim=seq_dim)
@@ -123,7 +122,7 @@ def cat_outputs_cp_with_grad(x: Tensor, seq_dim: int, cp_group: ProcessGroup) ->
     try:
         all_gather(gathered_tensors, x, group=cp_group)
     except RuntimeError as e:
-        raise RuntimeError(f"Failed to gather tensors: {e}")
+        raise RuntimeError(f"Failed to gather tensors: {e}")  # noqa: B904
 
     rank = cp_group.rank()
     gathered_tensors[rank] = x
@@ -165,9 +164,7 @@ def robust_broadcast(tensor: torch.Tensor, src: int, pg: ProcessGroup, is_check_
     return tensor
 
 
-def broadcast(
-    item: torch.Tensor | str | None, process_group: Optional[ProcessGroup] = None
-) -> torch.Tensor | str | None:
+def broadcast(item: torch.Tensor | str | None, process_group: ProcessGroup | None = None) -> torch.Tensor | str | None:
     """
     Broadcast the item from the minimum rank in the specified group(s).
     """
@@ -190,7 +187,7 @@ def broadcast(
 def broadcast_split_tensor(
     tensor: torch.Tensor,
     seq_dim: int,
-    process_group: Optional[ProcessGroup] = None,
+    process_group: ProcessGroup | None = None,
 ) -> torch.Tensor:
     """
     Broadcast the tensor from the minimum rank in the specified group(s).

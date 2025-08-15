@@ -14,7 +14,6 @@
 # limitations under the License.
 
 from abc import abstractmethod
-from typing import Optional
 
 import torch
 
@@ -27,7 +26,7 @@ from imaginaire.utils.callback import Callback
 class EveryN(Callback):
     def __init__(
         self,
-        every_n: Optional[int] = None,
+        every_n: int | None = None,
         step_size: int = 1,
         barrier_after_run: bool = True,
         run_at_start: bool = False,

@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import random
-from typing import Optional
 
 import numpy as np
 import torch
@@ -64,7 +63,7 @@ def pad_and_resize(
 
 
 class TextTransformForVideo(Augmentor):
-    def __init__(self, input_keys: dict, output_keys: Optional[list] = None, args: Optional[dict] = None) -> None:
+    def __init__(self, input_keys: dict, output_keys: list | None = None, args: dict | None = None) -> None:
         super().__init__(input_keys, output_keys, args)
 
         # our caption is saved in json with format: {"<key>": "xxx", "<caption_windows_key1>": [{"start_frame": x, "end_frame": x, "<caption_type>": xxx}, ...], "<caption_windows_key2>": [{"start_frame":...]}

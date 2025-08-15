@@ -13,12 +13,11 @@
 # -----------------------------------------------------------------------------
 
 from collections.abc import Mapping
-from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
 import torch.nn as nn
-from einops import rearrange, repeat
+from einops import rearrange
 from megatron.core import parallel_state
 from torch.distributed import ProcessGroup, get_process_group_ranks
 from torch.distributed._composable.fsdp import fully_shard
@@ -33,11 +32,10 @@ from cosmos_predict2.models.text2image_dit import (
 )
 from cosmos_predict2.models.video2world_dit import MinimalV1LVGDiT
 from cosmos_predict2.utils.context_parallel import split_inputs_cp
-from imaginaire.utils import log
 
 
 class MultiViewCrossAttention(Attention):
-    def __init__(self, *args, state_t: int = None, **kwargs) -> None:
+    def __init__(self, *args, state_t: int = None, **kwargs) -> None:  # noqa: RUF013
         super().__init__(*args, **kwargs)
         assert self.qkv_format == "bshd", "MultiViewCrossAttention only supports qkv_format='bshd'"
         self.state_t = state_t
@@ -68,8 +66,8 @@ class MultiViewBlock(Block):
         adaln_lora_dim: int = 256,
         self_attention_backend: str = "transformer_engine",
         cross_attention_backend: str = "transformer_engine",
-        natten_params: Optional[Mapping] = None,
-        state_t: int = None,
+        natten_params: Mapping | None = None,
+        state_t: int = None,  # noqa: RUF013
     ):
         super().__init__(
             x_dim,
@@ -103,10 +101,10 @@ class MultiCameraVideoRopePosition3DEmb(VideoRopePosition3DEmb):
     def generate_embeddings(
         self,
         B_T_H_W_C: torch.Size,
-        fps: Optional[torch.Tensor] = None,
-        h_ntk_factor: Optional[float] = None,
-        w_ntk_factor: Optional[float] = None,
-        t_ntk_factor: Optional[float] = None,
+        fps: torch.Tensor | None = None,
+        h_ntk_factor: float | None = None,
+        w_ntk_factor: float | None = None,
+        t_ntk_factor: float | None = None,
     ):
         B, T, H, W, C = B_T_H_W_C
         single_camera_B_T_H_W_C = (B, T // self.n_cameras, H, W, C)
@@ -168,9 +166,9 @@ class MultiViewDiT(MinimalV1LVGDiT):
         n_cameras_emb: int,
         view_condition_dim: int,
         concat_view_embedding: bool,
-        layer_mask: Optional[List[bool]] = None,
-        sac_config: SACConfig = SACConfig(),
-        natten_parameters: Optional[List[Optional[Mapping]]] = None,
+        layer_mask: list[bool] | None = None,
+        sac_config: SACConfig = SACConfig(),  # noqa: B008
+        natten_parameters: list[Mapping | None] | None = None,
         **kwargs,
     ):
         self.state_t = state_t
@@ -227,7 +225,7 @@ class MultiViewDiT(MinimalV1LVGDiT):
                 fully_shard(extra_pos_embedder, mesh=mesh, reshard_after_forward=True)
         fully_shard(self.t_embedder, mesh=mesh, reshard_after_forward=False)
 
-    def enable_context_parallel(self, process_group: Optional[ProcessGroup] = None):
+    def enable_context_parallel(self, process_group: ProcessGroup | None = None):
         # pos_embedder
         for pos_embedder in self.pos_embedder_options.values():
             pos_embedder.enable_context_parallel(process_group=process_group)
@@ -319,10 +317,10 @@ class MultiViewDiT(MinimalV1LVGDiT):
     def prepare_embedded_sequence(
         self,
         x_B_C_T_H_W: torch.Tensor,
-        fps: Optional[torch.Tensor] = None,
-        padding_mask: Optional[torch.Tensor] = None,
-        view_indices_B_T: Optional[torch.Tensor] = None,
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], torch.Tensor]:
+        fps: torch.Tensor | None = None,
+        padding_mask: torch.Tensor | None = None,
+        view_indices_B_T: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor | None, torch.Tensor]:
         if self.concat_padding_mask:
             padding_mask = transforms.functional.resize(
                 padding_mask, list(x_B_C_T_H_W.shape[-2:]), interpolation=transforms.InterpolationMode.NEAREST
@@ -333,7 +331,7 @@ class MultiViewDiT(MinimalV1LVGDiT):
         try:
             process_group = parallel_state.get_context_parallel_group()
             cp_size = len(get_process_group_ranks(process_group))
-        except:
+        except:  # noqa: E722
             cp_size = 1
         n_cameras = (x_B_C_T_H_W.shape[2] * cp_size) // self.state_t
         pos_embedder = self.pos_embedder_options[f"n_cameras_{n_cameras}"]
@@ -389,13 +387,13 @@ class MultiViewDiT(MinimalV1LVGDiT):
         x_B_C_T_H_W: torch.Tensor,
         timesteps_B_T: torch.Tensor,
         crossattn_emb: torch.Tensor,
-        condition_video_input_mask_B_C_T_H_W: Optional[torch.Tensor] = None,
-        fps: Optional[torch.Tensor] = None,
-        padding_mask: Optional[torch.Tensor] = None,
-        data_type: Optional[DataType] = DataType.VIDEO,
-        view_indices_B_T: Optional[torch.Tensor] = None,
+        condition_video_input_mask_B_C_T_H_W: torch.Tensor | None = None,
+        fps: torch.Tensor | None = None,
+        padding_mask: torch.Tensor | None = None,
+        data_type: DataType | None = DataType.VIDEO,
+        view_indices_B_T: torch.Tensor | None = None,
         **kwargs,
-    ) -> torch.Tensor | List[torch.Tensor] | Tuple[torch.Tensor, List[torch.Tensor]]:
+    ) -> torch.Tensor | list[torch.Tensor] | tuple[torch.Tensor, list[torch.Tensor]]:
         # Deletes elements like condition.use_video_condition that are not used in the forward pass
         del kwargs
         if data_type == DataType.VIDEO:

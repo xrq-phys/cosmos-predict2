@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Type
 
 import attrs
 from torch.utils.data import IterableDataset
@@ -54,13 +53,13 @@ class Wdinfo:
 @attrs.define(slots=False)
 class AugmentorConfig:
     # Type of augmentor
-    type: Type[Augmentor]
+    type: type[Augmentor]
     # Input keys used by the augmentor
     input_keys: list[str]
     # Output keys returned by the augmentor
-    output_keys: Optional[list[str]] = None
+    output_keys: list[str] | None = None
     # Additional arguments used by the augmentor
-    args: Optional[dict] = None
+    args: dict | None = None
 
     def make_instance(self) -> Augmentor:
         return self.type(input_keys=self.input_keys, output_keys=self.output_keys, args=self.args)
@@ -77,6 +76,6 @@ class DatasetConfig:
     augmentation: dict[str, AugmentorConfig]  # Dictionary containing all augmentations
     streaming_download: bool = True  # Whether to use streaming loader
     remove_extension_from_keys: bool = True  # True: objects will have a key of data_type; False: data_type.extension
-    sample_keys_full_list_path: Optional[str] = (
+    sample_keys_full_list_path: str | None = (
         None  # Path to the file containing all keys present in the dataset, e.g., "index"
     )

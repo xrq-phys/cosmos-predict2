@@ -54,7 +54,7 @@ def main(args) -> None:
             # Skip if the file already exists
             continue
 
-        with open(meta_filename, "r") as fp:
+        with open(meta_filename) as fp:
             prompt = fp.read().strip()
 
         # Compute T5 embeddings

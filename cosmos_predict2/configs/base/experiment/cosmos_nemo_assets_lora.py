@@ -164,7 +164,7 @@ for _item in [
     predict2_video2world_lora_training_14b_cosmos_nemo_assets,
 ]:
     # Get the experiment name from the global variable.
-    experiment_name = [name.lower() for name, value in globals().items() if value is _item][0]
+    experiment_name = [name.lower() for name, value in globals().items() if value is _item][0]  # noqa: RUF015
     cs.store(
         group="experiment",
         package="_global_",

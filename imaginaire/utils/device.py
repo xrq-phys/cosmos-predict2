@@ -33,7 +33,7 @@ class Device:
         affinity_string = ""
         for j in pynvml.nvmlDeviceGetCpuAffinity(self.handle, Device._nvml_affinity_elements):
             # assume nvml returns list of 64 bit ints
-            affinity_string = "{:064b}".format(j) + affinity_string
+            affinity_string = f"{j:064b}" + affinity_string
         affinity_list = [int(x) for x in affinity_string]
         affinity_list.reverse()  # so core 0 is in 0th element of list
         return [i for i, e in enumerate(affinity_list) if e != 0]

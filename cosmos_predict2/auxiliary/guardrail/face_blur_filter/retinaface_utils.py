@@ -80,9 +80,9 @@ def _check_keys(model, pretrained_state_dict):
     used_pretrained_keys = model_keys & ckpt_keys
     unused_pretrained_keys = ckpt_keys - model_keys
     missing_keys = model_keys - ckpt_keys
-    log.debug("Missing keys:{}".format(len(missing_keys)))
-    log.debug("Unused checkpoint keys:{}".format(len(unused_pretrained_keys)))
-    log.debug("Used keys:{}".format(len(used_pretrained_keys)))
+    log.debug(f"Missing keys:{len(missing_keys)}")
+    log.debug(f"Unused checkpoint keys:{len(unused_pretrained_keys)}")
+    log.debug(f"Used keys:{len(used_pretrained_keys)}")
     assert len(used_pretrained_keys) > 0, "load NONE from pretrained checkpoint"
     return True
 
@@ -90,7 +90,7 @@ def _check_keys(model, pretrained_state_dict):
 # Adapted from https://github.com/biubug6/Pytorch_Retinaface/blob/master/detect.py
 def _remove_prefix(state_dict, prefix):
     """Old version of the model is stored with all names of parameters sharing common prefix 'module.'"""
-    log.debug("Removing prefix '{}'".format(prefix))
+    log.debug(f"Removing prefix '{prefix}'")
 
     def f(x):
         return x.split(prefix, 1)[-1] if x.startswith(prefix) else x
@@ -100,7 +100,7 @@ def _remove_prefix(state_dict, prefix):
 
 # Adapted from https://github.com/biubug6/Pytorch_Retinaface/blob/master/detect.py
 def load_model(model, pretrained_path, load_to_cpu):
-    log.debug("Loading pretrained model from {}".format(pretrained_path))
+    log.debug(f"Loading pretrained model from {pretrained_path}")
     if load_to_cpu:
         pretrained_dict = torch.load(pretrained_path, map_location=lambda storage, loc: storage, weights_only=True)
     else:

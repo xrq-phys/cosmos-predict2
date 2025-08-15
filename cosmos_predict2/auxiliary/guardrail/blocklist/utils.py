@@ -32,10 +32,10 @@ def read_keyword_list_from_dir(folder_path: str) -> list[str]:
     for file in file_list:
         file_path = os.path.join(folder_path, file)
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 output_list.extend([line.strip() for line in f.readlines()])
         except Exception as e:
-            log.error(f"Error reading file {file}: {str(e)}")
+            log.error(f"Error reading file {file}: {e!s}")
 
     return output_list
 

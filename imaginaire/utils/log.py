@@ -16,7 +16,7 @@
 import atexit
 import os
 import sys
-from typing import Any, Optional
+from typing import Any
 
 import torch.distributed as dist
 from loguru._logger import Core, Logger
@@ -136,7 +136,7 @@ def exception(message: str, rank0_only: bool = True) -> None:
     logger.opt(depth=1).bind(rank0_only=rank0_only).exception(message)
 
 
-def _get_rank(group: Optional[dist.ProcessGroup] = None) -> int:
+def _get_rank(group: dist.ProcessGroup | None = None) -> int:
     """Get the rank (GPU device) of the worker.
 
     Returns:

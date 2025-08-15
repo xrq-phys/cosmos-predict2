@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Callable, List, Tuple, Union
+from collections.abc import Callable
+from typing import Any
 
 import torch
 import torch.distributed as dist
@@ -67,12 +68,12 @@ def single_all_to_all(input, local_seq_2_local_head, group, async_op=False):
 
 
 def async_a2a_communicate(
-    a2a_inputs: Union[torch.Tensor, List[torch.Tensor]],
+    a2a_inputs: torch.Tensor | list[torch.Tensor],
     cp_size: int,
     cp_group: ProcessGroup,
     cp_stream: torch.cuda.Stream,
     local_seq_2_local_head: bool,
-) -> Union[torch.Tensor, List[torch.Tensor]]:
+) -> torch.Tensor | list[torch.Tensor]:
     """
     A2A communication for context parallelism. best used in communicate qkv
     Modified from Nvidia Transformer Engine.
@@ -123,7 +124,7 @@ class _SeqAllToAll(torch.autograd.Function):
         return res
 
     @staticmethod
-    def backward(ctx: Any, *grad_output: Tensor) -> Tuple[None, Tensor, None]:
+    def backward(ctx: Any, *grad_output: Tensor) -> tuple[None, Tensor, None]:
         return (None, _SeqAllToAll.apply(ctx.group, *grad_output, not ctx.local_seq_2_local_head), None)
 
 
@@ -138,7 +139,7 @@ class _SeqAllToAllQKV(torch.autograd.Function):
         cp_size: int,
         cp_stream: torch.cuda.Stream,
         local_seq_2_local_head: bool,
-    ) -> Tuple[Tensor, Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor, Tensor]:
         ctx.group = group
         ctx.cp_size = cp_size
         ctx.cp_stream = cp_stream
@@ -147,7 +148,7 @@ class _SeqAllToAllQKV(torch.autograd.Function):
         return q, k, v
 
     @staticmethod
-    def backward(ctx: Any, *grad_output: Tensor) -> Tuple[None, Tensor, Tensor, Tensor, None, None, None]:
+    def backward(ctx: Any, *grad_output: Tensor) -> tuple[None, Tensor, Tensor, Tensor, None, None, None]:
         q_grad, k_grad, v_grad = _SeqAllToAllQKV.apply(
             ctx.group, *grad_output, ctx.cp_size, ctx.cp_stream, not ctx.local_seq_2_local_head
         )
@@ -164,9 +165,9 @@ class DistributedAttention(torch.nn.Module):
 
     def __init__(
         self,
-        local_attention: Union[Module, Callable],
+        local_attention: Module | Callable,
     ) -> None:
-        super(DistributedAttention, self).__init__()
+        super(DistributedAttention, self).__init__()  # noqa: UP008
         self.local_attn = local_attention
         self.pg = None
         self.stream = None
@@ -205,7 +206,7 @@ class DistributedAttention(torch.nn.Module):
 class MinimalA2AAttnOp(DistributedAttention):
     def __init__(self, *args, **kwargs):
         del args, kwargs
-        super(MinimalA2AAttnOp, self).__init__(attention)
+        super(MinimalA2AAttnOp, self).__init__(attention)  # noqa: UP008
 
     def set_context_parallel_group(self, process_group, ranks, stream):
         del ranks
@@ -218,6 +219,6 @@ class MinimalA2AAttnOp(DistributedAttention):
 
 class NattenA2AAttnOp(MinimalA2AAttnOp):
     def __init__(self, *args, **kwargs):
-        super(NattenA2AAttnOp, self).__init__(None)
+        super(NattenA2AAttnOp, self).__init__(None)  # noqa: UP008
         self.natten_op = NeighborhoodAttention(*args, **kwargs, base_attn_op=attention)
         self.local_attn = self.natten_op

@@ -16,7 +16,6 @@ import math
 import os
 from contextlib import nullcontext
 from functools import partial
-from typing import List, Optional
 
 import numpy as np
 import torch
@@ -66,12 +65,12 @@ class EveryNDrawSample(EveryN):
         self,
         every_n: int,
         step_size: int = 1,
-        fix_batch_fp: Optional[str] = None,
+        fix_batch_fp: str | None = None,
         n_x0_level: int = 4,
         n_viz_sample: int = 3,
         n_sample_to_save: int = 128,
         num_sampling_step: int = 35,
-        guidance: List[float] = [3.0, 7.0, 9.0, 13.0],
+        guidance: list[float] = [3.0, 7.0, 9.0, 13.0],  # noqa: B006
         is_x0: bool = True,
         is_sample: bool = True,
         save_s3: bool = False,
@@ -303,14 +302,14 @@ class EveryNDrawSample(EveryN):
             return local_path
         return None
 
-    def run_save(self, to_show, batch_size, base_fp_wo_ext) -> Optional[str]:
+    def run_save(self, to_show, batch_size, base_fp_wo_ext) -> str | None:
         to_show = (1.0 + torch.stack(to_show, dim=0).clamp(-1, 1)) / 2.0  # [n, b, c, t, h, w]
         is_single_frame = to_show.shape[3] == 1
         n_viz_sample = min(self.n_viz_sample, batch_size)
 
         # ! we only save first n_sample_to_save video!
         if self.save_s3 and self.data_parallel_id < self.n_sample_to_save:
-            save_img_or_video(
+            save_img_or_video(  # noqa: F821
                 rearrange(to_show, "n b c t h w -> c t (n h) (b w)"),
                 f"s3://rundir/{self.name}/{base_fp_wo_ext}",
                 fps=self.fps,

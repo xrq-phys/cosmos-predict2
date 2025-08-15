@@ -26,7 +26,7 @@ OmegaConf.to_object = to_object
 PLACEHOLDER = None
 LazyDict = DictConfig
 
-__all__ = ["instantiate", "LazyCall", "LazyConfig", "PLACEHOLDER", "LazyDict"]
+__all__ = ["PLACEHOLDER", "LazyCall", "LazyConfig", "LazyDict", "instantiate"]
 
 
 DOC_BUILDING = os.getenv("_DOC_BUILDING", False)  # set in docs/conf.py

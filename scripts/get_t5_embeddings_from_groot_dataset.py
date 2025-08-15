@@ -47,7 +47,7 @@ def parse_args() -> argparse.ArgumentParser:
 
 def main(args) -> None:
     meta_csv = args.meta_csv
-    meta_lines = open(meta_csv, "r").readlines()[1:]
+    meta_lines = open(meta_csv).readlines()[1:]
     t5_xxl_dir = os.path.join(args.dataset_path, "t5_xxl")
     os.makedirs(t5_xxl_dir, exist_ok=True)
     meta_txt_dir = os.path.join(args.dataset_path, "metas")

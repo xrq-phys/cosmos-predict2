@@ -21,8 +21,6 @@ Used to build docker images with FA3 support.
 Refer to projects.cosmos.diffusion.v2.docker.README.md for details.
 """
 
-from typing import Optional, Tuple, Union
-
 import torch
 
 # isort: off
@@ -41,36 +39,36 @@ def _flash_attn_forward(
     q: torch.Tensor,
     k: torch.Tensor,
     v: torch.Tensor,
-    k_new: Optional[torch.Tensor],
-    v_new: Optional[torch.Tensor],
-    qv: Optional[torch.Tensor],
-    out: Optional[torch.Tensor],
-    cu_seqlens_q: Optional[torch.Tensor],
-    cu_seqlens_k: Optional[torch.Tensor],
-    cu_seqlens_k_new: Optional[torch.Tensor],
-    seqused_q: Optional[torch.Tensor],
-    seqused_k: Optional[torch.Tensor],
-    max_seqlen_q: Optional[int],
-    max_seqlen_k: Optional[int],
-    page_table: Optional[torch.Tensor],
-    kv_batch_idx: Optional[torch.Tensor],
-    leftpad_k: Optional[torch.Tensor],
-    rotary_cos: Optional[torch.Tensor],
-    rotary_sin: Optional[torch.Tensor],
-    q_descale: Optional[torch.Tensor],
-    k_descale: Optional[torch.Tensor],
-    v_descale: Optional[torch.Tensor],
-    softmax_scale: Optional[float],
+    k_new: torch.Tensor | None,
+    v_new: torch.Tensor | None,
+    qv: torch.Tensor | None,
+    out: torch.Tensor | None,
+    cu_seqlens_q: torch.Tensor | None,
+    cu_seqlens_k: torch.Tensor | None,
+    cu_seqlens_k_new: torch.Tensor | None,
+    seqused_q: torch.Tensor | None,
+    seqused_k: torch.Tensor | None,
+    max_seqlen_q: int | None,
+    max_seqlen_k: int | None,
+    page_table: torch.Tensor | None,
+    kv_batch_idx: torch.Tensor | None,
+    leftpad_k: torch.Tensor | None,
+    rotary_cos: torch.Tensor | None,
+    rotary_sin: torch.Tensor | None,
+    q_descale: torch.Tensor | None,
+    k_descale: torch.Tensor | None,
+    v_descale: torch.Tensor | None,
+    softmax_scale: float | None,
     causal: bool,
     window_size_left: int,
     window_size_right: int,
     softcap: float = 0.0,
     rotary_interleaved: bool = True,
-    scheduler_metadata: Optional[torch.Tensor] = None,
+    scheduler_metadata: torch.Tensor | None = None,
     num_splits: int = 1,
-    pack_gqa: Optional[bool] = None,
+    pack_gqa: bool | None = None,
     sm_margin: int = 0,
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     q, k, k_new, v_new = [maybe_contiguous(x) for x in (q, k, k_new, v_new)]
     v = v.contiguous() if v.stride(-1) != 1 and v.stride(-3) != 1 else v
     cu_seqlens_q, cu_seqlens_k, cu_seqlens_k_new = [
@@ -222,13 +220,13 @@ class FlashAttnQKVPackedFunc(torch.autograd.Function):
     def backward(ctx, dout, *args):
         q, k, v, out, softmax_lse = ctx.saved_tensors
         if ctx.ndim == 5:
-            qkv_shape = q.shape[:-2] + (3, *q.shape[-2:])
+            qkv_shape = q.shape[:-2] + (3, *q.shape[-2:])  # noqa: RUF005
             dqkv = torch.empty(qkv_shape, dtype=q.dtype, device=q.device)
             dq, dk, dv = dqkv.unbind(dim=-3)
         else:
             num_heads_q = q.shape[2]
             num_heads_k = k.shape[2]
-            qkv_shape = q.shape[:-2] + (num_heads_q + num_heads_k * 2, *q.shape[-1:])
+            qkv_shape = q.shape[:-2] + (num_heads_q + num_heads_k * 2, *q.shape[-1:])  # noqa: RUF005
             dqkv = torch.empty(qkv_shape, dtype=q.dtype, device=q.device)
             dq, dk, dv = dqkv.split([num_heads_q, num_heads_k, num_heads_k], dim=-2)
         _flash_attn_backward(
@@ -683,16 +681,16 @@ def flash_attn_with_kvcache(
     qv=None,
     rotary_cos=None,
     rotary_sin=None,
-    cache_seqlens: Optional[Union[(int, torch.Tensor)]] = None,
-    cache_batch_idx: Optional[torch.Tensor] = None,
-    cache_leftpad: Optional[torch.Tensor] = None,
-    page_table: Optional[torch.Tensor] = None,
-    cu_seqlens_q: Optional[torch.Tensor] = None,
-    cu_seqlens_k_new: Optional[torch.Tensor] = None,
-    max_seqlen_q: Optional[int] = None,
-    q_descale: Optional[torch.Tensor] = None,
-    k_descale: Optional[torch.Tensor] = None,
-    v_descale: Optional[torch.Tensor] = None,
+    cache_seqlens: int | torch.Tensor | None = None,
+    cache_batch_idx: torch.Tensor | None = None,
+    cache_leftpad: torch.Tensor | None = None,
+    page_table: torch.Tensor | None = None,
+    cu_seqlens_q: torch.Tensor | None = None,
+    cu_seqlens_k_new: torch.Tensor | None = None,
+    max_seqlen_q: int | None = None,
+    q_descale: torch.Tensor | None = None,
+    k_descale: torch.Tensor | None = None,
+    v_descale: torch.Tensor | None = None,
     softmax_scale=None,
     causal=False,
     window_size=(-1, -1),  # -1 means infinite context window
@@ -844,10 +842,10 @@ def get_scheduler_metadata(
     cache_seqlens: torch.Tensor,
     qkv_dtype=torch.bfloat16,
     headdim_v=None,
-    cu_seqlens_q: Optional[torch.Tensor] = None,
-    cu_seqlens_k_new: Optional[torch.Tensor] = None,
-    cache_leftpad: Optional[torch.Tensor] = None,
-    page_size: Optional[int] = None,
+    cu_seqlens_q: torch.Tensor | None = None,
+    cu_seqlens_k_new: torch.Tensor | None = None,
+    cache_leftpad: torch.Tensor | None = None,
+    page_size: int | None = None,
     max_seqlen_k_new=0,
     causal=False,
     window_size=(-1, -1),  # -1 means infinite context window

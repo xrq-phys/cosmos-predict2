@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import os
 import threading
-from typing import List, NamedTuple, Tuple
+from typing import NamedTuple
 
 import torch
 
@@ -25,7 +25,7 @@ from imaginaire.model import ImaginaireModel
 from imaginaire.utils import distributed, log, misc
 from imaginaire.utils.checkpointer import Checkpointer as BaseCheckpointer
 
-TORCH_VERSION: Tuple[int, ...] = tuple(int(x) for x in torch.__version__.split(".")[:2])
+TORCH_VERSION: tuple[int, ...] = tuple(int(x) for x in torch.__version__.split(".")[:2])
 if TORCH_VERSION >= (1, 11):
     from torch.ao import quantization
     from torch.ao.quantization import FakeQuantizeBase, ObserverBase
@@ -42,9 +42,9 @@ class _IncompatibleKeys(
     NamedTuple(
         "IncompatibleKeys",
         [
-            ("missing_keys", List[str]),
-            ("unexpected_keys", List[str]),
-            ("incorrect_shapes", List[Tuple[str, Tuple[int], Tuple[int]]]),
+            ("missing_keys", list[str]),
+            ("unexpected_keys", list[str]),
+            ("incorrect_shapes", list[tuple[str, tuple[int], tuple[int]]]),
         ],
     )
 ):

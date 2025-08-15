@@ -22,7 +22,7 @@ from collections import defaultdict
 from contextlib import nullcontext
 from dataclasses import dataclass, field, fields
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
+from typing import Any, TypeVar
 
 import omegaconf
 import torch
@@ -50,7 +50,7 @@ class DataType(str, Enum):
         return self.value
 
 
-def broadcast_condition(condition: BaseCondition, process_group: Optional[ProcessGroup] = None) -> BaseCondition:
+def broadcast_condition(condition: BaseCondition, process_group: ProcessGroup | None = None) -> BaseCondition:
     """
     Broadcast the condition from the minimum rank in the specified group(s).
     """
@@ -80,7 +80,7 @@ class AbstractEmbModel(nn.Module):
         return self._is_trainable
 
     @property
-    def dropout_rate(self) -> Union[float, torch.Tensor]:
+    def dropout_rate(self) -> float | torch.Tensor:
         return self._dropout_rate
 
     @property
@@ -96,7 +96,7 @@ class AbstractEmbModel(nn.Module):
         self._is_trainable = value
 
     @dropout_rate.setter
-    def dropout_rate(self, value: Union[float, torch.Tensor]):
+    def dropout_rate(self, value: float | torch.Tensor):
         self._dropout_rate = value
 
     @input_key.setter
@@ -124,7 +124,7 @@ class AbstractEmbModel(nn.Module):
         del self._return_dict
 
     def random_dropout_input(
-        self, in_tensor: torch.Tensor, dropout_rate: Optional[float] = None, key: Optional[str] = None
+        self, in_tensor: torch.Tensor, dropout_rate: float | None = None, key: str | None = None
     ) -> torch.Tensor:
         del key
         dropout_rate = dropout_rate if dropout_rate is not None else self.dropout_rate
@@ -147,7 +147,7 @@ class AbstractEmbModel(nn.Module):
 
 
 class TextAttr(AbstractEmbModel):
-    def __init__(self, input_key: List[str], dropout_rate: Optional[float] = 0.0):
+    def __init__(self, input_key: list[str], dropout_rate: float | None = 0.0):
         super().__init__()
         self._input_key = input_key
         self._dropout_rate = dropout_rate
@@ -156,7 +156,7 @@ class TextAttr(AbstractEmbModel):
         return {"crossattn_emb": token}
 
     def random_dropout_input(
-        self, in_tensor: torch.Tensor, dropout_rate: Optional[float] = None, key: Optional[str] = None
+        self, in_tensor: torch.Tensor, dropout_rate: float | None = None, key: str | None = None
     ) -> torch.Tensor:
         if key is not None and "mask" in key:
             return in_tensor
@@ -170,9 +170,9 @@ class ReMapkey(AbstractEmbModel):
     def __init__(
         self,
         input_key: str,
-        output_key: Optional[str] = None,
-        dropout_rate: Optional[float] = 0.0,
-        dtype: Optional[str] = None,
+        output_key: str | None = None,
+        dropout_rate: float | None = 0.0,
+        dtype: str | None = None,
     ):
         super().__init__()
         self.output_key = output_key
@@ -189,7 +189,7 @@ class ReMapkey(AbstractEmbModel):
         self._output_key = output_key
         self._dropout_rate = dropout_rate
 
-    def forward(self, element: torch.Tensor) -> Dict[str, torch.Tensor]:
+    def forward(self, element: torch.Tensor) -> dict[str, torch.Tensor]:
         key = self.output_key if self.output_key else self.input_key
         if isinstance(element, torch.Tensor):
             element = element.to(dtype=self.dtype)
@@ -201,19 +201,19 @@ class ReMapkey(AbstractEmbModel):
 
 
 class BooleanFlag(AbstractEmbModel):
-    def __init__(self, input_key: str, output_key: Optional[str] = None, dropout_rate: Optional[float] = 0.0):
+    def __init__(self, input_key: str, output_key: str | None = None, dropout_rate: float | None = 0.0):
         super().__init__()
         self._input_key = input_key
         self._dropout_rate = dropout_rate
         self.output_key = output_key
 
-    def forward(self, *args, **kwargs) -> Dict[str, torch.Tensor]:
+    def forward(self, *args, **kwargs) -> dict[str, torch.Tensor]:
         del args, kwargs
         key = self.output_key if self.output_key else self.input_key
         return {key: self.flag}
 
     def random_dropout_input(
-        self, in_tensor: torch.Tensor, dropout_rate: Optional[float] = None, key: Optional[str] = None
+        self, in_tensor: torch.Tensor, dropout_rate: float | None = None, key: str | None = None
     ) -> torch.Tensor:
         del key
         dropout_rate = dropout_rate if dropout_rate is not None else self.dropout_rate
@@ -230,7 +230,7 @@ class BooleanFlag(AbstractEmbModel):
 
 # BaseCondition and its children
 @dataclass(frozen=True)
-class BaseCondition(ABC):
+class BaseCondition(ABC):  # noqa: B024
     """
     Base class for condition data structures that hold conditioning information for generation models.
 
@@ -241,7 +241,7 @@ class BaseCondition(ABC):
 
     _is_broadcasted: bool = False
 
-    def to_dict(self, skip_underscore: bool = True) -> Dict[str, Any]:
+    def to_dict(self, skip_underscore: bool = True) -> dict[str, Any]:
         """Converts the condition to a dictionary.
 
         Returns:
@@ -271,10 +271,10 @@ class BaseCondition(ABC):
 
 @dataclass(frozen=True)
 class TextCondition(BaseCondition):
-    crossattn_emb: Optional[torch.Tensor] = None
+    crossattn_emb: torch.Tensor | None = None
     data_type: DataType = DataType.VIDEO
-    padding_mask: Optional[torch.Tensor] = None
-    fps: Optional[torch.Tensor] = None
+    padding_mask: torch.Tensor | None = None
+    fps: torch.Tensor | None = None
 
     def edit_data_type(self, data_type: DataType) -> TextCondition:
         """Edit the data type of the condition.
@@ -298,15 +298,15 @@ class TextCondition(BaseCondition):
 class VideoCondition(TextCondition):
     use_video_condition: bool = False
     # the following two attributes are used to set the video condition; during training, inference
-    gt_frames: Optional[torch.Tensor] = None
-    condition_video_input_mask_B_C_T_H_W: Optional[torch.Tensor] = None
+    gt_frames: torch.Tensor | None = None
+    condition_video_input_mask_B_C_T_H_W: torch.Tensor | None = None
 
     def set_video_condition(
         self,
         gt_frames: torch.Tensor,
         random_min_num_conditional_frames: int,
         random_max_num_conditional_frames: int,
-        num_conditional_frames: Optional[int] = None,
+        num_conditional_frames: int | None = None,
     ) -> VideoCondition:
         """
         Sets the video conditioning frames for video-to-video generation.
@@ -413,11 +413,11 @@ class VideoCondition(TextCondition):
 
 @dataclass(frozen=True)
 class GR00TV1VideoCondition(TextCondition):
-    gt_first_frame: Optional[torch.Tensor] = None
+    gt_first_frame: torch.Tensor | None = None
     use_image_condition: bool = False
-    condition_video_input_mask_B_C_T_H_W: Optional[torch.Tensor] = None
+    condition_video_input_mask_B_C_T_H_W: torch.Tensor | None = None
 
-    def edit_video_condition(self, x0_B_C_T_H_W, process_group: Optional[ProcessGroup] = None) -> GR00TV1VideoCondition:
+    def edit_video_condition(self, x0_B_C_T_H_W, process_group: ProcessGroup | None = None) -> GR00TV1VideoCondition:
         """Edit the video condition to include the video mask information.
 
         Args:
@@ -439,7 +439,7 @@ class GR00TV1VideoCondition(TextCondition):
 
 @dataclass(frozen=True)
 class ActionCondition(VideoCondition):
-    action: Optional[torch.Tensor] = None
+    action: torch.Tensor | None = None
 
 
 # ------------------- conditioner classes -------------------
@@ -464,9 +464,9 @@ class GeneralConditioner(nn.Module, ABC):
                                        for initializing the embedders.
     """
 
-    KEY2DIM = {"crossattn_emb": 1}
+    KEY2DIM = {"crossattn_emb": 1}  # noqa: RUF012
 
-    def __init__(self, **emb_models: Union[List, Any]):
+    def __init__(self, **emb_models: list | Any):
         super().__init__()
         self.embedders = nn.ModuleDict()
         for n, (emb_name, emb_config) in enumerate(emb_models.items()):
@@ -488,17 +488,17 @@ class GeneralConditioner(nn.Module, ABC):
     @abstractmethod
     def forward(
         self,
-        batch: Dict,
-        override_dropout_rate: Optional[Dict[str, float]] = None,
+        batch: dict,
+        override_dropout_rate: dict[str, float] | None = None,
     ) -> Any:
         """Should be implemented in subclasses to handle conditon datatype"""
         raise NotImplementedError
 
     def _forward(
         self,
-        batch: Dict,
-        override_dropout_rate: Optional[Dict[str, float]] = None,
-    ) -> Dict:
+        batch: dict,
+        override_dropout_rate: dict[str, float] | None = None,
+    ) -> dict:
         """
         Processes the input batch through all configured embedders, applying conditional dropout rates if specified.
         Output tensors for each key are concatenated along the dimensions specified in KEY2DIM.
@@ -550,8 +550,8 @@ class GeneralConditioner(nn.Module, ABC):
 
     def get_condition_uncondition(
         self,
-        data_batch: Dict,
-    ) -> Tuple[Any, Any]:
+        data_batch: dict,
+    ) -> tuple[Any, Any]:
         """
         Processes the provided data batch to generate two sets of outputs: conditioned and unconditioned. This method
         manipulates the dropout rates of embedders to simulate two scenarios — one where all conditions are applied
@@ -581,8 +581,8 @@ class GeneralConditioner(nn.Module, ABC):
 
     def get_condition_with_negative_prompt(
         self,
-        data_batch: Dict,
-    ) -> Tuple[Any, Any]:
+        data_batch: dict,
+    ) -> tuple[Any, Any]:
         """
         Similar functionality as get_condition_uncondition
         But use negative prompts for unconditon
@@ -609,8 +609,8 @@ class GeneralConditioner(nn.Module, ABC):
 class TextConditioner(GeneralConditioner):
     def forward(
         self,
-        batch: Dict,
-        override_dropout_rate: Optional[Dict[str, float]] = None,
+        batch: dict,
+        override_dropout_rate: dict[str, float] | None = None,
     ) -> TextCondition:
         output = super()._forward(batch, override_dropout_rate)
         return TextCondition(**output)
@@ -619,8 +619,8 @@ class TextConditioner(GeneralConditioner):
 class VideoConditioner(GeneralConditioner):
     def forward(
         self,
-        batch: Dict,
-        override_dropout_rate: Optional[Dict[str, float]] = None,
+        batch: dict,
+        override_dropout_rate: dict[str, float] | None = None,
     ) -> VideoCondition:
         output = super()._forward(batch, override_dropout_rate)
         return VideoCondition(**output)
@@ -629,8 +629,8 @@ class VideoConditioner(GeneralConditioner):
 class GR00TV1VideoConditioner(GeneralConditioner):
     def forward(
         self,
-        batch: Dict,
-        override_dropout_rate: Optional[Dict[str, float]] = None,
+        batch: dict,
+        override_dropout_rate: dict[str, float] | None = None,
     ) -> GR00TV1VideoCondition:
         output = super()._forward(batch, override_dropout_rate)
         return GR00TV1VideoCondition(**output)
@@ -639,8 +639,8 @@ class GR00TV1VideoConditioner(GeneralConditioner):
 class ActionConditioner(VideoConditioner):
     def forward(
         self,
-        batch: Dict,
-        override_dropout_rate: Optional[Dict[str, float]] = None,
+        batch: dict,
+        override_dropout_rate: dict[str, float] | None = None,
     ) -> ActionCondition:
         output = super()._forward(batch, override_dropout_rate)
         assert "action" in batch, "ActionConditioner requires 'action' in batch"
@@ -678,12 +678,12 @@ class ConditionLocationListValidator(Validator):
         - ANY_CAM and REF_CAM are not set together
     """
 
-    def __init__(self, default: List[ConditionLocation], hidden=False, tooltip=None):
+    def __init__(self, default: list[ConditionLocation], hidden=False, tooltip=None):
         self.default = default
         self.hidden = hidden
         self.tooltip = tooltip
 
-    def validate(self, value: List[ConditionLocation]):
+    def validate(self, value: list[ConditionLocation]):
         for v in value:
             if not isinstance(v, ConditionLocation):
                 raise TypeError(f"All elements must be ConditionLocation enums, got {type(v)}: {v}")
@@ -705,7 +705,7 @@ class ConditionLocationListValidator(Validator):
 
 
 class ConditionLocationList(list):
-    def __init__(self, locations: List[ConditionLocation]):
+    def __init__(self, locations: list[ConditionLocation]):
         enum_locations = []
         for loc in locations:
             if not isinstance(loc, ConditionLocation):
@@ -727,23 +727,23 @@ class ConditionLocationList(list):
 
 @dataclass(frozen=True)
 class MultiViewCondition(VideoCondition):
-    state_t: Optional[int] = None
-    view_indices_B_T: Optional[torch.Tensor] = None
-    ref_cam_view_idx_sample_position: Optional[torch.Tensor] = None
+    state_t: int | None = None
+    view_indices_B_T: torch.Tensor | None = None
+    ref_cam_view_idx_sample_position: torch.Tensor | None = None
 
     def set_video_condition(
         self,
         state_t: int,
         gt_frames: torch.Tensor,
-        condition_locations: Union[ConditionLocationList, ListConfig] = field(
+        condition_locations: ConditionLocationList | ListConfig = field(  # noqa: B008
             default_factory=lambda: ConditionLocationList([])
         ),
-        random_min_num_conditional_frames_per_view: Optional[int] = None,
-        random_max_num_conditional_frames_per_view: Optional[int] = None,
-        num_conditional_frames_per_view: Optional[int] = None,
-        condition_cam_idx: Optional[int] = None,
-        view_condition_dropout_max: Optional[int] = 0,
-    ) -> "MultiViewCondition":
+        random_min_num_conditional_frames_per_view: int | None = None,
+        random_max_num_conditional_frames_per_view: int | None = None,
+        num_conditional_frames_per_view: int | None = None,
+        condition_cam_idx: int | None = None,
+        view_condition_dropout_max: int | None = 0,
+    ) -> MultiViewCondition:
         """
         Sets the video conditioning frames for anymulti-to-multiview generation.
 
@@ -919,12 +919,12 @@ class MultiViewCondition(VideoCondition):
 
     def edit_for_inference(
         self,
-        condition_locations: Union[ConditionLocationList, ListConfig] = field(
+        condition_locations: ConditionLocationList | ListConfig = field(  # noqa: B008
             default_factory=lambda: ConditionLocationList([])
         ),
         is_cfg_conditional: bool = True,
         num_conditional_frames_per_view: int = 1,
-    ) -> "MultiViewCondition":
+    ) -> MultiViewCondition:
         _condition = self.set_video_condition(
             state_t=self.state_t,
             gt_frames=self.gt_frames,
@@ -940,7 +940,7 @@ class MultiViewCondition(VideoCondition):
             _condition.use_video_condition.fill_(True)
         return _condition
 
-    def broadcast(self, process_group: torch.distributed.ProcessGroup) -> "MultiViewCondition":
+    def broadcast(self, process_group: torch.distributed.ProcessGroup) -> MultiViewCondition:
         if self.is_broadcasted:
             return self
         gt_frames_B_C_T_H_W = self.gt_frames
@@ -989,6 +989,6 @@ class MultiViewCondition(VideoCondition):
 
 
 class MultiViewConditioner(GeneralConditioner):
-    def forward(self, batch: Dict, override_dropout_rate: Optional[Dict[str, float]] = None) -> MultiViewCondition:
+    def forward(self, batch: dict, override_dropout_rate: dict[str, float] | None = None) -> MultiViewCondition:
         output = super()._forward(batch, override_dropout_rate)
         return MultiViewCondition(**output)

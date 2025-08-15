@@ -139,7 +139,7 @@ class Checkpointer:
             log.success(f"Saved checkpoint (local): {checkpoint_path}")
             iteration = int(checkpoint_file.replace("iter_", "").replace(".pt", ""))
             self.callbacks.on_save_checkpoint_success(iteration=iteration)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             log.exception(f"Checkpoint failed to save (local): {e}")
 
     @misc.timer("checkpoint loading")

@@ -21,7 +21,8 @@ import json
 import os
 import re
 import xml.etree.ElementTree as ET
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 import torch
 
@@ -39,7 +40,7 @@ from imaginaire.utils import log
 from imaginaire.utils.distributed import get_rank
 
 
-def parse_response(response: str) -> Optional[Dict[str, Any]]:
+def parse_response(response: str) -> dict[str, Any] | None:
     try:
         wrapped = f"<root>{response.strip()}</root>"
         root = ET.fromstring(wrapped)
@@ -80,7 +81,7 @@ def video_to_base64(video_path: str) -> str:
         return base64.b64encode(video_file.read()).decode("utf-8")
 
 
-def build_html_report(video_path: str, responses: List[str]) -> str:
+def build_html_report(video_path: str, responses: list[str]) -> str:
     # Convert video to base64
     video_base64 = video_to_base64(video_path)
     mime_type = "video/mp4"
@@ -136,7 +137,7 @@ def build_html_report(video_path: str, responses: List[str]) -> str:
     <h2>Detailed Analysis ({len(responses)} trials)</h2>
 """
 
-    for i, (response, parsed) in enumerate(zip(responses, parsed_responses), 1):
+    for i, (response, parsed) in enumerate(zip(responses, parsed_responses, strict=False), 1):  # noqa: B007
         if parsed is not None:
             answer = parsed.get("answer", "").lower()
             answer_class = "red" if answer == "yes" else "green"
@@ -179,7 +180,7 @@ def build_html_report(video_path: str, responses: List[str]) -> str:
     return html
 
 
-def count_answers(responses: List[str]) -> tuple[int, int]:
+def count_answers(responses: list[str]) -> tuple[int, int]:
     no_count = 0
     total_parsed = 0
     for response in responses:
@@ -306,7 +307,7 @@ def parse_args():
 
 def generate_video(
     args: argparse.Namespace, pipe: Video2WorldPipeline, process_single_generation: Callable
-) -> List[str]:
+) -> list[str]:
     if not validate_input_file(args.input_path, args.num_conditional_frames):
         log.error(f"Input file validation failed: {args.input_path}")
         return []
@@ -449,7 +450,7 @@ if __name__ == "__main__":
                 log.info("-" * 80)
 
                 # Sort videos by score (highest first)
-                sorted_results = sorted(zip(scores, video_paths), key=lambda x: x[0], reverse=True)
+                sorted_results = sorted(zip(scores, video_paths, strict=False), key=lambda x: x[0], reverse=True)
 
                 for i, (score, video_path) in enumerate(sorted_results, 1):
                     video_name = os.path.basename(video_path)

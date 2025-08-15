@@ -14,7 +14,8 @@
 # limitations under the License.
 
 import collections
-from typing import Any, Dict, Mapping, Optional, Tuple
+from collections.abc import Mapping
+from typing import Any
 
 import attrs
 import torch
@@ -59,7 +60,7 @@ class Predict2Text2ImageModelConfig:
     loss_scale: float = 10.0
 
     # This is used for the original way to load models
-    model_manager_config: Predict2ModelManagerConfig = Predict2ModelManagerConfig()
+    model_manager_config: Predict2ModelManagerConfig = Predict2ModelManagerConfig()  # noqa: RUF009
     # This is a new way to load models
     pipe_config: Text2ImagePipelineConfig = PREDICT2_TEXT2IMAGE_PIPELINE_2B
     # debug flag
@@ -248,7 +249,7 @@ class Predict2Text2ImageModel(ImaginaireModel):
             else:
                 self.pipe.dit.accum_video_sample_counter += data_batch[input_key].shape[0] * self.data_parallel_size
 
-    def draw_training_sigma_and_epsilon(self, x0_size: torch.Size, condition: Any) -> Tuple[torch.Tensor, torch.Tensor]:
+    def draw_training_sigma_and_epsilon(self, x0_size: torch.Size, condition: Any) -> tuple[torch.Tensor, torch.Tensor]:
         batch_size = x0_size[0]
         epsilon = torch.randn(x0_size, device="cuda")
         sigma_B = self.pipe.scheduler.sample_sigma(batch_size).to(device="cuda")
@@ -272,7 +273,7 @@ class Predict2Text2ImageModel(ImaginaireModel):
         condition: TextCondition,
         epsilon_B_C_T_H_W: torch.Tensor,
         sigma_B_T: torch.Tensor,
-    ) -> Tuple[dict, torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[dict, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Compute loss givee epsilon and sigma
 
@@ -366,7 +367,7 @@ class Predict2Text2ImageModel(ImaginaireModel):
 
     # ------------------ Checkpointing ------------------
 
-    def state_dict(self) -> Dict[str, Any]:
+    def state_dict(self) -> dict[str, Any]:
         # the checkpoint format should be compatible with traditional imaginaire4
         # pipeline contains both net and net_ema
         # checkpoint should be saved/loaded from Model
@@ -456,7 +457,7 @@ class Predict2Text2ImageModel(ImaginaireModel):
         max_norm: float,
         norm_type: float = 2.0,
         error_if_nonfinite: bool = False,
-        foreach: Optional[bool] = None,
+        foreach: bool | None = None,
     ) -> torch.Tensor:
         return clip_grad_norm_(
             self.net.parameters(),

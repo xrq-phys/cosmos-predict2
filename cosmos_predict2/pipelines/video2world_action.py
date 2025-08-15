@@ -272,7 +272,7 @@ class Video2WorldActionConditionedPipeline(Video2WorldPipeline):
 
         x_sigma_max = (
             misc.arch_invariant_rand(
-                (n_sample,) + tuple(state_shape),
+                (n_sample,) + tuple(state_shape),  # noqa: RUF005
                 torch.float32,
                 self.tensor_kwargs["device"],
                 seed,
@@ -340,7 +340,7 @@ class Video2WorldActionConditionedPipeline(Video2WorldPipeline):
             frames = frames.permute(1, 2, 3, 0).cpu().numpy()  # (T, H, W, C)
 
             # Run guardrail
-            processed_frames = guardrail_presets.run_video_guardrail(frames, self.video_guardrail_runner)
+            processed_frames = guardrail_presets.run_video_guardrail(frames, self.video_guardrail_runner)  # noqa: F821
             if processed_frames is None:
                 return None
             else:

@@ -15,10 +15,11 @@
 
 import json
 import warnings
+from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import IO, Any, Generator, Iterator, Optional, Tuple, Union
+from typing import IO, Any
 
 from imaginaire.utils.easy_io.backends import backends, prefix_to_backends
 from imaginaire.utils.easy_io.file_client import FileClient
@@ -31,7 +32,7 @@ def is_filepath(filepath):
     return isinstance(filepath, (str, Path))
 
 
-def _parse_uri_prefix(uri: Union[str, Path]) -> str:
+def _parse_uri_prefix(uri: str | Path) -> str:
     """Parse the prefix of uri.
 
     Args:
@@ -80,11 +81,11 @@ def _get_file_backend(prefix: str, backend_args: dict):
 
 
 def get_file_backend(
-    uri: Union[str, Path, None] = None,
+    uri: str | Path | None = None,
     *,
-    backend_args: Optional[dict] = None,
+    backend_args: dict | None = None,
     enable_singleton: bool = False,
-    backend_key: Optional[str] = None,
+    backend_key: str | None = None,
 ):
     """Return a file backend based on the prefix of uri or backend_args.
 
@@ -141,9 +142,9 @@ def get_file_backend(
 
 
 def get(
-    filepath: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    filepath: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> bytes:
     """Read bytes from a given ``filepath`` with 'rb' mode.
 
@@ -171,10 +172,10 @@ def get(
 
 
 def get_text(
-    filepath: Union[str, Path],
+    filepath: str | Path,
     encoding="utf-8",
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> str:
     """Read text from a given ``filepath`` with 'r' mode.
 
@@ -205,9 +206,9 @@ def get_text(
 
 def put(
     obj: bytes,
-    filepath: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    filepath: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> None:
     """Write bytes to a given ``filepath`` with 'wb' mode.
 
@@ -237,9 +238,9 @@ def put(
 
 def put_text(
     obj: str,
-    filepath: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    filepath: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> None:
     """Write text to a given ``filepath`` with 'w' mode.
 
@@ -270,9 +271,9 @@ def put_text(
 
 
 def exists(
-    filepath: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    filepath: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> bool:
     """Check whether a file path exists.
 
@@ -300,9 +301,9 @@ def exists(
 
 
 def isdir(
-    filepath: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    filepath: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> bool:
     """Check whether a file path is a directory.
 
@@ -332,9 +333,9 @@ def isdir(
 
 
 def isfile(
-    filepath: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    filepath: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> bool:
     """Check whether a file path is a file.
 
@@ -363,11 +364,11 @@ def isfile(
 
 
 def join_path(
-    filepath: Union[str, Path],
-    *filepaths: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
-) -> Union[str, Path]:
+    filepath: str | Path,
+    *filepaths: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
+) -> str | Path:
     r"""Concatenate all file paths.
 
     Join one or more filepath components intelligently. The return value
@@ -401,10 +402,10 @@ def join_path(
 
 @contextmanager
 def get_local_path(
-    filepath: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
-) -> Generator[Union[str, Path], None, None]:
+    filepath: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
+) -> Generator[str | Path, None, None]:
     """Download data from ``filepath`` and write the data to local path.
 
     ``get_local_path`` is decorated by :meth:`contxtlib.contextmanager`. It
@@ -438,11 +439,11 @@ def get_local_path(
 
 
 def copyfile(
-    src: Union[str, Path],
-    dst: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
-) -> Union[str, Path]:
+    src: str | Path,
+    dst: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
+) -> str | Path:
     """Copy a file src to dst and return the destination file.
 
     src and dst should have the same prefix. If dst specifies a directory,
@@ -481,11 +482,11 @@ def copyfile(
 
 
 def copytree(
-    src: Union[str, Path],
-    dst: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
-) -> Union[str, Path]:
+    src: str | Path,
+    dst: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
+) -> str | Path:
     """Recursively copy an entire directory tree rooted at src to a directory
     named dst and return the destination directory.
 
@@ -516,11 +517,11 @@ def copytree(
 
 
 def copyfile_from_local(
-    src: Union[str, Path],
-    dst: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
-) -> Union[str, Path]:
+    src: str | Path,
+    dst: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
+) -> str | Path:
     """Copy a local file src to dst and return the destination file.
 
     Note:
@@ -556,11 +557,11 @@ def copyfile_from_local(
 
 
 def copytree_from_local(
-    src: Union[str, Path],
-    dst: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
-) -> Union[str, Path]:
+    src: str | Path,
+    dst: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
+) -> str | Path:
     """Recursively copy an entire directory tree rooted at src to a directory
     named dst and return the destination directory.
 
@@ -588,12 +589,12 @@ def copytree_from_local(
 
 
 def copyfile_to_local(
-    src: Union[str, Path],
-    dst: Union[str, Path],
+    src: str | Path,
+    dst: str | Path,
     dst_type: str,  # Choose from ["file", "dir"]
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
-) -> Union[str, Path]:
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
+) -> str | Path:
     """Copy the file src to local dst and return the destination file.
 
     If dst specifies a directory, the file will be copied into dst using
@@ -635,11 +636,11 @@ def copyfile_to_local(
 
 
 def copytree_to_local(
-    src: Union[str, Path],
-    dst: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
-) -> Union[str, Path]:
+    src: str | Path,
+    dst: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
+) -> str | Path:
     """Recursively copy an entire directory tree rooted at src to a local
     directory named dst and return the destination directory.
 
@@ -668,9 +669,9 @@ def copytree_to_local(
 
 
 def remove(
-    filepath: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    filepath: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> None:
     """Remove a file.
 
@@ -699,9 +700,9 @@ def remove(
 
 
 def rmtree(
-    dir_path: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    dir_path: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> None:
     """Recursively delete a directory tree.
 
@@ -724,10 +725,10 @@ def rmtree(
 
 
 def copy_if_symlink_fails(
-    src: Union[str, Path],
-    dst: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    src: str | Path,
+    dst: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> bool:
     """Create a symbolic link pointing to src named dst.
 
@@ -759,9 +760,9 @@ def copy_if_symlink_fails(
 
 
 def list_dir(
-    dir_path: Union[str, Path],
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    dir_path: str | Path,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ):
     """List all folders in a directory with a given path.
 
@@ -786,13 +787,13 @@ def list_dir(
 
 
 def list_dir_or_file(
-    dir_path: Union[str, Path],
+    dir_path: str | Path,
     list_dir: bool = True,
     list_file: bool = True,
-    suffix: Optional[Union[str, Tuple[str]]] = None,
+    suffix: str | tuple[str] | None = None,
     recursive: bool = False,
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
 ) -> Iterator[str]:
     """Scan a directory to find the interested directories or files in
     arbitrary order.
@@ -844,12 +845,12 @@ def list_dir_or_file(
 
 
 def load(
-    file: Union[str, Path, IO[Any]],
-    file_format: Optional[str] = None,
-    file_client_args: Optional[dict] = None,
+    file: str | Path | IO[Any],
+    file_format: str | None = None,
+    file_client_args: dict | None = None,
     fast_backend: bool = False,
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
     **kwargs,
 ):
     """Load data from json/yaml/pickle files.
@@ -892,7 +893,7 @@ def load(
         raise TypeError(f"Unsupported format: {file_format}")
 
     if file_client_args is not None:
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             '"file_client_args" will be deprecated in future. Please use "backend_args" instead',
             DeprecationWarning,
         )
@@ -921,7 +922,7 @@ def load(
                     with BytesIO(file_backend.fast_get(file)) as f:
                         obj = handler.load_from_fileobj(f, **kwargs)
                 else:
-                    warnings.warn(
+                    warnings.warn(  # noqa: B028
                         f"fast_backend is not supported by the backend, type {type(file_backend)} fallback to normal get"
                     )
                     with BytesIO(file_backend.get(file)) as f:
@@ -938,12 +939,12 @@ def load(
 
 def dump(
     obj: Any,
-    file: Union[str, Path, IO[Any], None] = None,
-    file_format: Optional[str] = None,
-    file_client_args: Optional[dict] = None,
+    file: str | Path | IO[Any] | None = None,
+    file_format: str | None = None,
+    file_client_args: dict | None = None,
     fast_backend: bool = False,
-    backend_args: Optional[dict] = None,
-    backend_key: Optional[str] = None,
+    backend_args: dict | None = None,
+    backend_key: str | None = None,
     **kwargs,
 ):
     """Dump data to json/yaml/pickle strings or files.
@@ -990,7 +991,7 @@ def dump(
         raise TypeError(f"Unsupported format: {file_format}")
 
     if file_client_args is not None:
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             '"file_client_args" will be deprecated in future. Please use "backend_args" instead',
             DeprecationWarning,
         )
@@ -1023,7 +1024,7 @@ def dump(
                     if hasattr(file_backend, "fast_put"):
                         file_backend.fast_put(f, file)
                     else:
-                        warnings.warn("fast_backend is not supported by the backend, fallback to normal put")
+                        warnings.warn("fast_backend is not supported by the backend, fallback to normal put")  # noqa: B028
                         file_backend.put(f, file)
                 else:
                     file_backend.put(f, file)

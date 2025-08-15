@@ -53,7 +53,7 @@ class EnvParser:
         self.check_mandatory_values()
 
     def from_json(self, file_name):
-        with open(file_name, "r") as f:
+        with open(file_name) as f:
             log.info(f"Reading env params from {file_name}")
             dict = json.load(f)
             for key, value in dict.items():

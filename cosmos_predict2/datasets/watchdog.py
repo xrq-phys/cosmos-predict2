@@ -19,7 +19,7 @@ import contextlib
 import threading
 import time
 from collections.abc import Iterator
-from typing import Any, Optional, Union
+from typing import Any
 
 from imaginaire.utils import log
 
@@ -57,10 +57,10 @@ class OperationWatchdog:
         self._verbose_interval = verbose_interval
         self._name = name
         self._ops: dict[str, dict[str, Any]] = {}  # Active operations
-        self._stats: dict[str, dict[str, Union[int, float]]] = {}  # Operation statistics
+        self._stats: dict[str, dict[str, int | float]] = {}  # Operation statistics
         self._lock = threading.Lock()
         self._stop_event = threading.Event()
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
 
         # Auto-start the monitoring thread
         self.start()
@@ -171,7 +171,7 @@ class OperationWatchdog:
                     op["update"] = current_time
                     op["warned"] = False
 
-    def get_stats(self, operation_name: Optional[str] = None) -> dict[str, Any]:
+    def get_stats(self, operation_name: str | None = None) -> dict[str, Any]:
         """Get statistics for operations.
 
         Args:

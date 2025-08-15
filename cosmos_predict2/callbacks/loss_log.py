@@ -14,7 +14,6 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Tuple
 
 import torch
 import torch.distributed as dist
@@ -33,7 +32,7 @@ class _LossRecord:
         self.iter_count = 0
         self.loss = 0
 
-    def get_stat(self) -> Tuple[float, float]:
+    def get_stat(self) -> tuple[float, float]:
         if self.iter_count > 0:
             loss = self.loss / self.iter_count
             dist.all_reduce(loss, op=dist.ReduceOp.AVG)

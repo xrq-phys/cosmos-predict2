@@ -118,7 +118,7 @@ def enable_vram_management_recursively(
     module_map: dict,
     module_config: dict,
     max_num_param=None,
-    overflow_module_config: dict = None,
+    overflow_module_config: dict = None,  # noqa: RUF013
     total_num_param=0,
 ):
     for name, module in model.named_children():
@@ -145,7 +145,7 @@ def enable_vram_management(
     module_map: dict,
     module_config: dict,
     max_num_param=None,
-    overflow_module_config: dict = None,
+    overflow_module_config: dict = None,  # noqa: RUF013
 ):
     enable_vram_management_recursively(
         model, module_map, module_config, max_num_param, overflow_module_config, total_num_param=0

@@ -63,7 +63,7 @@ def isRotm(R):
     # Forked from Andy Zeng
     Rt = np.transpose(R)
     shouldBeIdentity = np.dot(Rt, R)
-    I = np.identity(3, dtype=R.dtype)
+    I = np.identity(3, dtype=R.dtype)  # noqa: E741
     n = np.linalg.norm(I - shouldBeIdentity)
     return n < 1e-6
 
@@ -179,16 +179,16 @@ def to_tensor(clip):
     """
     _is_tensor_video_clip(clip)
     if not clip.dtype == torch.uint8:
-        raise TypeError("clip tensor should have data type uint8. Got %s" % str(clip.dtype))
+        raise TypeError("clip tensor should have data type uint8. Got %s" % str(clip.dtype))  # noqa: UP031
     # return clip.float().permute(3, 0, 1, 2) / 255.0
     return clip.float() / 255.0
 
 
 def _is_tensor_video_clip(clip):
     if not torch.is_tensor(clip):
-        raise TypeError("clip should be Tensor. Got %s" % type(clip))
+        raise TypeError("clip should be Tensor. Got %s" % type(clip))  # noqa: UP031
 
     if not clip.ndimension() == 4:
-        raise ValueError("clip should be 4D. Got %dD" % clip.dim())
+        raise ValueError("clip should be 4D. Got %dD" % clip.dim())  # noqa: UP031
 
     return True

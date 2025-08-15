@@ -17,7 +17,7 @@
 Impl of multistep methods to solve the ODE in the diffusion model.
 """
 
-from typing import Callable, List, Tuple
+from collections.abc import Callable
 
 import torch
 
@@ -26,7 +26,7 @@ from cosmos_predict2.functional.runge_kutta import reg_x0_euler_step, res_x0_rk2
 
 def order2_fn(
     x_s: torch.Tensor, s: torch.Tensor, t: torch.Tensor, x0_s: torch.Tensor, x0_preds: torch.Tensor
-) -> Tuple[torch.Tensor, List[torch.Tensor]]:
+) -> tuple[torch.Tensor, list[torch.Tensor]]:
     """
     impl the second order multistep method in https://arxiv.org/pdf/2308.02157
     Adams Bashforth approach!

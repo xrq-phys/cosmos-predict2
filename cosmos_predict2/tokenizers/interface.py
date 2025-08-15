@@ -19,7 +19,7 @@ import torch
 
 
 class VideoTokenizerInterface(ABC):
-    def __init__(self):
+    def __init__(self):  # noqa: B027
         pass
 
     @abstractmethod

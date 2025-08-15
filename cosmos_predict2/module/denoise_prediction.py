@@ -14,7 +14,6 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Optional
 
 import torch
 
@@ -22,5 +21,5 @@ import torch
 @dataclass
 class DenoisePrediction:
     x0: torch.Tensor  # clean data prediction
-    eps: Optional[torch.Tensor] = None  # noise prediction
-    logvar: Optional[torch.Tensor] = None  # log variance of noise prediction, can be used a confidence / uncertainty
+    eps: torch.Tensor | None = None  # noise prediction
+    logvar: torch.Tensor | None = None  # log variance of noise prediction, can be used a confidence / uncertainty

@@ -37,7 +37,7 @@ class DTensorFastEmaModelUpdater:
 
     @torch.no_grad()
     def copy_to(self, src_model: torch.nn.Module, tgt_model: torch.nn.Module) -> None:
-        for tgt_params, src_params in zip(tgt_model.parameters(), src_model.parameters()):
+        for tgt_params, src_params in zip(tgt_model.parameters(), src_model.parameters(), strict=False):
             if isinstance(tgt_params, DTensor) and isinstance(src_params, DTensor):
                 tgt_params.to_local().data.copy_(src_params.to_local().data)
             else:
@@ -47,7 +47,7 @@ class DTensorFastEmaModelUpdater:
     def update_average(self, src_model: torch.nn.Module, tgt_model: torch.nn.Module, beta: float = 0.9999) -> None:
         target_list = []
         source_list = []
-        for tgt_params, src_params in zip(tgt_model.parameters(), src_model.parameters()):
+        for tgt_params, src_params in zip(tgt_model.parameters(), src_model.parameters(), strict=False):
             assert tgt_params.dtype == torch.float32, (
                 f"EMA model only works in FP32 dtype, got {tgt_params.dtype} instead."
             )

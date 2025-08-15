@@ -15,7 +15,7 @@
 
 import threading
 import traceback
-from typing import Callable, Dict, Iterator, List, Optional
+from collections.abc import Callable, Iterator
 
 import numpy as np
 import torch
@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader
 from cosmos_predict2.datasets.watchdog import OperationWatchdog
 
 
-def concatenate_batches(n: int, data_batches: List[Dict]) -> List[Dict]:
+def concatenate_batches(n: int, data_batches: list[dict]) -> list[dict]:
     """
     Smartly concatenate n input data batches into m output data batches.
     Each data batch is a dictionary with values that can be torch tensor, string, or list.
@@ -124,7 +124,7 @@ class CachedReplayDataLoader:
         self,
         data_loader: DataLoader,
         cache_size: int,
-        cache_augmentation_fn: Callable[[Dict], List[Dict]],
+        cache_augmentation_fn: Callable[[dict], list[dict]],
         concat_size: int = 1,
         name: str = "cached_replay_dataloader",
     ) -> None:
@@ -148,7 +148,7 @@ class CachedReplayDataLoader:
         # Create an iterator over the infinite DataLoader.
         self._data_iter: Iterator = iter(self.data_loader)
         # Internal cache to store augmented batches.
-        self._cache: List[Dict] = []
+        self._cache: list[dict] = []
         # Condition variable to manage cache access.
         self._cache_cond = threading.Condition()
         # Event to signal the background thread to stop.
@@ -215,7 +215,7 @@ class CachedReplayDataLoader:
             exception (Exception): The exception that was raised
             context (str, optional): Additional context about where the error occurred
         """
-        error_info = f"{context}: {str(exception)}\n{traceback.format_exc()}"
+        error_info = f"{context}: {exception!s}\n{traceback.format_exc()}"
         with self._cache_cond:
             self._prefetch_exception = RuntimeError(error_info)
             self._cache_cond.notify_all()  # Wake up any waiting threads
@@ -225,7 +225,7 @@ class CachedReplayDataLoader:
         if self._prefetch_exception is not None:
             raise self._prefetch_exception
 
-    def __iter__(self) -> Iterator[Dict]:
+    def __iter__(self) -> Iterator[dict]:
         """Yield augmented data batches from the cache, optionally concatenated based on concat_size.
 
         This method starts the background prefetch thread if it hasn't been started yet.
@@ -299,7 +299,7 @@ class CachedReplayDataLoader:
                         yield concat_batches[0]
                     except Exception as e:
                         # Handle errors in batch concatenation
-                        raise RuntimeError(f"Error concatenating batches: {str(e)}") from e
+                        raise RuntimeError(f"Error concatenating batches: {e!s}") from e
 
     def __len__(self) -> int:
         """Return the length of the underlying DataLoader."""
@@ -325,7 +325,7 @@ def get_cached_replay_dataloader(
     use_cache: bool = False,
     cache_size: int = 32,
     concat_size: int = 1,
-    cache_augment_fn: Optional[Callable] = None,
+    cache_augment_fn: Callable | None = None,
     cache_replay_name: str = "cached_replay_dataloader",
     webdataset: bool = True,
     **kwargs,

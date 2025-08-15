@@ -15,9 +15,9 @@
 
 import os
 import tempfile
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, Union
 from urllib.request import urlopen
 
 from imaginaire.utils.easy_io.backends.base_backend import BaseStorageBackend
@@ -61,7 +61,7 @@ class HTTPBackend(BaseStorageBackend):
         return urlopen(filepath).read().decode(encoding)
 
     @contextmanager
-    def get_local_path(self, filepath: str) -> Generator[Union[str, Path], None, None]:
+    def get_local_path(self, filepath: str) -> Generator[str | Path, None, None]:
         """Download a file from ``filepath`` to a local temporary directory,
         and return the temporary path.
 

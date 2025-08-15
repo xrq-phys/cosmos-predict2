@@ -110,7 +110,7 @@ class RectifiedFlowAB2Scheduler(KDPM2DiscreteScheduler):
         ones = torch.ones(x_t.shape[0], device=x_t.device, dtype=dtype_work)
 
         if x0_prev is None:
-            # First step – Euler in x0-formulation.
+            # First step – Euler in x0-formulation.  # noqa: RUF003
             x_next, _ = reg_x0_euler_step(
                 x_t,
                 sigma_t * ones,
@@ -118,7 +118,7 @@ class RectifiedFlowAB2Scheduler(KDPM2DiscreteScheduler):
                 x0_t,
             )
         else:
-            # Subsequent steps – 2-AB using residual formulation.
+            # Subsequent steps – 2-AB using residual formulation.  # noqa: RUF003
             x_next = res_x0_rk2_step(
                 x_t,
                 sigma_s * ones,

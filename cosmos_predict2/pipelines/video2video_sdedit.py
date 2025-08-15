@@ -14,13 +14,12 @@
 # limitations under the License.
 import math
 import os
-from typing import Any, List, Tuple, Union
+from typing import Any
 
 import numpy as np
 import torch
 import torchvision
 import torchvision.transforms.functional as F
-from einops import rearrange
 from megatron.core import parallel_state
 from tqdm import tqdm
 
@@ -72,7 +71,7 @@ def process_video_first_frame(
         video_frames, video_metadata = easy_io.load(video_path)  # Returns (T, H, W, C) numpy array
         log.info(f"Loaded video with shape {video_frames.shape}, metadata: {video_metadata}")
     except Exception as e:
-        raise ValueError(f"Failed to load video {video_path}: {e}")
+        raise ValueError(f"Failed to load video {video_path}: {e}")  # noqa: B904
 
     # Extract only the first frame
     first_frame = video_frames[0]  # (H, W, C)
@@ -88,7 +87,7 @@ def process_video_first_frame(
 
         # Calculate scaling based on aspect ratio
         scaling_ratio = max((target_w / W), (target_h / H))
-        resizing_shape = (int(math.ceil(scaling_ratio * H)), int(math.ceil(scaling_ratio * W)))
+        resizing_shape = (int(math.ceil(scaling_ratio * H)), int(math.ceil(scaling_ratio * W)))  # noqa: RUF046
 
         # Add batch dimension for resize operation
         frame_tensor = frame_tensor.unsqueeze(0)  # (1, C, H, W)
@@ -142,7 +141,7 @@ def read_and_process_video_first_frames(
         video_frames, video_metadata = easy_io.load(video_path)  # Returns (T, H, W, C) numpy array
         log.info(f"Loaded video with shape {video_frames.shape}, metadata: {video_metadata}")
     except Exception as e:
-        raise ValueError(f"Failed to load video {video_path}: {e}")
+        raise ValueError(f"Failed to load video {video_path}: {e}")  # noqa: B904
 
     # Convert numpy array to tensor and rearrange dimensions
     video_tensor = torch.from_numpy(video_frames).float() / 255.0  # Convert to [0, 1] range
@@ -173,7 +172,7 @@ def read_and_process_video_first_frames(
 
         # Calculate scaling based on aspect ratio
         scaling_ratio = max((target_w / W), (target_h / H))
-        resizing_shape = (int(math.ceil(scaling_ratio * H)), int(math.ceil(scaling_ratio * W)))
+        resizing_shape = (int(math.ceil(scaling_ratio * H)), int(math.ceil(scaling_ratio * W)))  # noqa: RUF046
 
         # Resize and crop the extracted frames
         extracted_frames = torchvision.transforms.functional.resize(extracted_frames, resizing_shape)
@@ -387,7 +386,7 @@ class Text2ImageSDEditPipeline(Text2ImagePipeline):
 
         x_sigma_max = (
             misc.arch_invariant_rand(
-                (n_sample,) + tuple(state_shape),
+                (n_sample,) + tuple(state_shape),  # noqa: RUF005
                 torch.float32,
                 self.tensor_kwargs["device"],
                 seed,
@@ -413,7 +412,7 @@ class Text2ImageSDEditPipeline(Text2ImagePipeline):
 
         x0_prev: torch.Tensor | None = None
 
-        for i, timestep in enumerate(tqdm(timesteps, desc="Generating image")):
+        for i, timestep in enumerate(tqdm(timesteps, desc="Generating image")):  # noqa: B007
             step = int(timestep)
             # Current noise level (sigma_t).
             sigma_t = scheduler.sigmas[step].to(sample.device, dtype=torch.float32)
@@ -702,7 +701,7 @@ class Video2WorldSDEditPipeline(Video2WorldPipeline):
 
         x_sigma_max = (
             misc.arch_invariant_rand(
-                (n_sample,) + tuple(state_shape),
+                (n_sample,) + tuple(state_shape),  # noqa: RUF005
                 torch.float32,
                 self.tensor_kwargs["device"],
                 seed,
@@ -732,7 +731,7 @@ class Video2WorldSDEditPipeline(Video2WorldPipeline):
 
         x0_prev: torch.Tensor | None = None
 
-        for i, timestep in enumerate(tqdm(timesteps, desc="Generating video")):
+        for i, timestep in enumerate(tqdm(timesteps, desc="Generating video")):  # noqa: B007
             step = int(timestep)
             # Current noise level (sigma_t).
             sigma_t = scheduler.sigmas[step].to(sample.device, dtype=torch.float32)

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import IO, Optional, Tuple, Union
+from typing import IO
 
 import numpy as np
 
@@ -33,7 +33,7 @@ class PILHandler(BaseFileHandler):
         self,
         file: IO[bytes],
         fmt: str = "pil",
-        size: Optional[Union[int, Tuple[int, int]]] = None,
+        size: int | tuple[int, int] | None = None,
         **kwargs,
     ):
         """
@@ -84,7 +84,7 @@ class PILHandler(BaseFileHandler):
                 "Unsupported format. Supported formats are 'numpy', 'np', 'npy', 'pil', 'th', and 'torch'."
             )
         except Exception as e:
-            raise IOError(f"Unable to load image: {e}") from e
+            raise OSError(f"Unable to load image: {e}") from e
 
     def dump_to_fileobj(self, obj, file: IO[bytes], **kwargs):
         if "format" not in kwargs:

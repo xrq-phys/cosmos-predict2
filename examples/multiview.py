@@ -62,7 +62,7 @@ def validate_input_file(input_path: str, num_conditional_frames: int) -> bool:
 def setup_pipeline(args: argparse.Namespace, text_encoder=None):
     log.info(f"Using model size: {args.model_size}")
     config = PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES
-    dit_path = f"checkpoints/nvidia/Cosmos-Predict2-2B-Multiview/model-720p-10fps-7views-29frames.pt"
+    dit_path = "checkpoints/nvidia/Cosmos-Predict2-2B-Multiview/model-720p-10fps-7views-29frames.pt"
     if hasattr(args, "dit_path") and args.dit_path:
         dit_path = args.dit_path
 
@@ -132,7 +132,7 @@ def setup_pipeline(args: argparse.Namespace, text_encoder=None):
     return pipe
 
 
-def process_single_generation(
+def process_single_generation(  # noqa: F811
     pipe: MultiviewPipeline,
     input_path: str,
     prompt: str,
@@ -216,7 +216,7 @@ def generate_video(args: argparse.Namespace, pipe: MultiviewPipeline) -> None:
     if args.batch_input_json is not None:
         # Process batch inputs from JSON file
         log.info(f"Loading batch inputs from JSON file: {args.batch_input_json}")
-        with open(args.batch_input_json, "r") as f:
+        with open(args.batch_input_json) as f:
             batch_inputs = json.load(f)
 
         for idx, item in enumerate(batch_inputs):

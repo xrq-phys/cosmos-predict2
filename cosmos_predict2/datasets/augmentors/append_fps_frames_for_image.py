@@ -13,14 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
 
 from imaginaire.datasets.webdataset.augmentors.augmentor import Augmentor
 
 
 class AppendFPSFramesForImage(Augmentor):
     def __init__(
-        self, input_keys: Optional[list] = None, output_keys: Optional[list] = None, args: Optional[dict] = None
+        self, input_keys: list | None = None, output_keys: list | None = None, args: dict | None = None
     ) -> None:
         super().__init__(input_keys, output_keys, args)
 

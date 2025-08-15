@@ -17,9 +17,9 @@ import io
 import os
 import os.path as osp
 import shutil
+from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, Iterator, Optional, Tuple, Union
 
 from imaginaire.utils.easy_io.backends.base_backend import BaseStorageBackend, mkdir_or_exist
 
@@ -29,7 +29,7 @@ class LocalBackend(BaseStorageBackend):
 
     _allow_symlink = True
 
-    def get(self, filepath: Union[str, Path]) -> bytes:
+    def get(self, filepath: str | Path) -> bytes:
         """Read bytes from a given ``filepath`` with 'rb' mode.
 
         Args:
@@ -48,7 +48,7 @@ class LocalBackend(BaseStorageBackend):
             value = f.read()
         return value
 
-    def get_text(self, filepath: Union[str, Path], encoding: str = "utf-8") -> str:
+    def get_text(self, filepath: str | Path, encoding: str = "utf-8") -> str:
         """Read text from a given ``filepath`` with 'r' mode.
 
         Args:
@@ -69,7 +69,7 @@ class LocalBackend(BaseStorageBackend):
             text = f.read()
         return text
 
-    def put(self, obj: Union[bytes, io.BytesIO], filepath: Union[str, Path]) -> None:
+    def put(self, obj: bytes | io.BytesIO, filepath: str | Path) -> None:
         """Write bytes to a given ``filepath`` with 'wb' mode.
 
         Note:
@@ -92,7 +92,7 @@ class LocalBackend(BaseStorageBackend):
         with open(filepath, "wb") as f:
             f.write(obj)
 
-    def put_text(self, obj: str, filepath: Union[str, Path], encoding: str = "utf-8") -> None:
+    def put_text(self, obj: str, filepath: str | Path, encoding: str = "utf-8") -> None:
         """Write text to a given ``filepath`` with 'w' mode.
 
         Note:
@@ -114,7 +114,7 @@ class LocalBackend(BaseStorageBackend):
         with open(filepath, "w", encoding=encoding) as f:
             f.write(obj)
 
-    def exists(self, filepath: Union[str, Path]) -> bool:
+    def exists(self, filepath: str | Path) -> bool:
         """Check whether a file path exists.
 
         Args:
@@ -131,7 +131,7 @@ class LocalBackend(BaseStorageBackend):
         """
         return osp.exists(filepath)
 
-    def isdir(self, filepath: Union[str, Path]) -> bool:
+    def isdir(self, filepath: str | Path) -> bool:
         """Check whether a file path is a directory.
 
         Args:
@@ -150,7 +150,7 @@ class LocalBackend(BaseStorageBackend):
         """
         return osp.isdir(filepath)
 
-    def isfile(self, filepath: Union[str, Path]) -> bool:
+    def isfile(self, filepath: str | Path) -> bool:
         """Check whether a file path is a file.
 
         Args:
@@ -168,7 +168,7 @@ class LocalBackend(BaseStorageBackend):
         """
         return osp.isfile(filepath)
 
-    def join_path(self, filepath: Union[str, Path], *filepaths: Union[str, Path]) -> str:
+    def join_path(self, filepath: str | Path, *filepaths: str | Path) -> str:
         r"""Concatenate all file paths.
 
         Join one or more filepath components intelligently. The return value
@@ -213,8 +213,8 @@ class LocalBackend(BaseStorageBackend):
 
     def copyfile(
         self,
-        src: Union[str, Path],
-        dst: Union[str, Path],
+        src: str | Path,
+        dst: str | Path,
     ) -> str:
         """Copy a file src to dst and return the destination file.
 
@@ -252,8 +252,8 @@ class LocalBackend(BaseStorageBackend):
 
     def copytree(
         self,
-        src: Union[str, Path],
-        dst: Union[str, Path],
+        src: str | Path,
+        dst: str | Path,
     ) -> str:
         """Recursively copy an entire directory tree rooted at src to a
         directory named dst and return the destination directory.
@@ -282,8 +282,8 @@ class LocalBackend(BaseStorageBackend):
 
     def copyfile_from_local(
         self,
-        src: Union[str, Path],
-        dst: Union[str, Path],
+        src: str | Path,
+        dst: str | Path,
     ) -> str:
         """Copy a local file src to dst and return the destination file. Same
         as :meth:`copyfile`.
@@ -319,8 +319,8 @@ class LocalBackend(BaseStorageBackend):
 
     def copytree_from_local(
         self,
-        src: Union[str, Path],
-        dst: Union[str, Path],
+        src: str | Path,
+        dst: str | Path,
     ) -> str:
         """Recursively copy an entire directory tree rooted at src to a
         directory named dst and return the destination directory. Same as
@@ -344,9 +344,9 @@ class LocalBackend(BaseStorageBackend):
 
     def copyfile_to_local(
         self,
-        src: Union[str, Path],
-        dst: Union[str, Path],
-        dst_type: Optional[str] = None,
+        src: str | Path,
+        dst: str | Path,
+        dst_type: str | None = None,
     ) -> str:
         """Copy the file src to local dst and return the destination file. Same
         as :meth:`copyfile`.
@@ -382,8 +382,8 @@ class LocalBackend(BaseStorageBackend):
 
     def copytree_to_local(
         self,
-        src: Union[str, Path],
-        dst: Union[str, Path],
+        src: str | Path,
+        dst: str | Path,
     ) -> str:
         """Recursively copy an entire directory tree rooted at src to a local
         directory named dst and return the destination directory.
@@ -406,7 +406,7 @@ class LocalBackend(BaseStorageBackend):
         """
         return self.copytree(src, dst)
 
-    def remove(self, filepath: Union[str, Path]) -> None:
+    def remove(self, filepath: str | Path) -> None:
         """Remove a file.
 
         Args:
@@ -431,7 +431,7 @@ class LocalBackend(BaseStorageBackend):
 
         os.remove(filepath)
 
-    def rmtree(self, dir_path: Union[str, Path]) -> None:
+    def rmtree(self, dir_path: str | Path) -> None:
         """Recursively delete a directory tree.
 
         Args:
@@ -445,8 +445,8 @@ class LocalBackend(BaseStorageBackend):
 
     def copy_if_symlink_fails(
         self,
-        src: Union[str, Path],
-        dst: Union[str, Path],
+        src: str | Path,
+        dst: str | Path,
     ) -> bool:
         """Create a symbolic link pointing to src named dst.
 
@@ -484,10 +484,10 @@ class LocalBackend(BaseStorageBackend):
 
     def list_dir_or_file(
         self,
-        dir_path: Union[str, Path],
+        dir_path: str | Path,
         list_dir: bool = True,
         list_file: bool = True,
-        suffix: Optional[Union[str, Tuple[str]]] = None,
+        suffix: str | tuple[str] | None = None,
         recursive: bool = False,
     ) -> Iterator[str]:
         """Scan a directory to find the interested directories or files in
@@ -526,7 +526,7 @@ class LocalBackend(BaseStorageBackend):
             >>> # list all files and directory recursively
             >>> for file_path in backend.list_dir_or_file(dir_path, recursive=True):
             ...     print(file_path)
-        """  # noqa: E501
+        """
         if list_dir and suffix is not None:
             raise TypeError("`suffix` should be None when `list_dir` is True")
 

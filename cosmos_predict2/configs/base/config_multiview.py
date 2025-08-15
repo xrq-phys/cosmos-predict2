@@ -26,7 +26,6 @@ from cosmos_predict2.configs.base.config_video2world import (
     EMAConfig,
     SolverTimestampConfig,
     TokenizerInterface,
-    Video2WorldPipelineConfig,
 )
 from cosmos_predict2.models.multiview_dit import MultiViewDiT
 from cosmos_predict2.models.text2image_dit import SACConfig
@@ -62,7 +61,7 @@ class MultiviewPipelineConfig:
     text_encoder_class: str = "T5"
     input_video_key: str = "video"
     input_image_key: str = "images"
-    timestamps: SolverTimestampConfig = L(SolverTimestampConfig)(
+    timestamps: SolverTimestampConfig = L(SolverTimestampConfig)(  # noqa: RUF009
         nfe=35,
         t_min=0.01,
         t_max=200.0,

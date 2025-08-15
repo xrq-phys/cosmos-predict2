@@ -46,7 +46,7 @@
 # Layer 23: 55% sparsity
 # No global self attention layers.
 #
-# Expected 1.9 – 2.6X End-to-End speedup depending on FPS, device arch.
+# Expected 1.9 – 2.6X End-to-End speedup depending on FPS, device arch.  # noqa: RUF003
 #
 PREDICT2_VIDEO2WORLD_NET_2B_NATTEN_PARAMETERS = [
     {"window_size": (-1, 4, 16), "dilation": (1, 11, 5), "base_size": (-1, 44, 80)},  # layer 0
@@ -89,7 +89,7 @@ PREDICT2_VIDEO2WORLD_NET_2B_NATTEN_PARAMETERS = [
 # Layer 27: 0% sparsity (self attn)
 # 1 global self attention layer.
 #
-# Expected 1.7 – 2.1X End-to-End speedup depending on FPS, device arch.
+# Expected 1.7 – 2.1X End-to-End speedup depending on FPS, device arch.  # noqa: RUF003
 #
 PREDICT2_VIDEO2WORLD_NET_14B_NATTEN_PARAMETERS = [
     {"window_size": (-1, 4, 16), "dilation": (1, 11, 5), "base_size": (-1, 44, 80)},  # layer 0

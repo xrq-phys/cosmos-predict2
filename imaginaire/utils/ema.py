@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -47,14 +47,14 @@ class FastEmaModelUpdater:
 
     @torch.no_grad()
     def copy_to(self, src_model: torch.nn.Module, tgt_model: torch.nn.Module) -> None:
-        for tgt_params, src_params in zip(tgt_model.parameters(), src_model.parameters()):
+        for tgt_params, src_params in zip(tgt_model.parameters(), src_model.parameters(), strict=False):
             tgt_params.data.copy_(src_params.data)
 
     @torch.no_grad()
     def update_average(self, src_model: torch.nn.Module, tgt_model: torch.nn.Module, beta: float = 0.9999) -> None:
         target_list = []
         source_list = []
-        for tgt_params, src_params in zip(tgt_model.parameters(), src_model.parameters()):
+        for tgt_params, src_params in zip(tgt_model.parameters(), src_model.parameters(), strict=False):
             assert tgt_params.dtype == torch.float32, (
                 f"EMA model only works in FP32 dtype, got {tgt_params.dtype} instead."
             )
@@ -147,7 +147,7 @@ class EMAModelTracker(torch.nn.Module):
         self.is_cached = False
 
     @torch.no_grad()
-    def update_average(self, model: ImaginaireModel, iteration: Optional[int] = None) -> None:
+    def update_average(self, model: ImaginaireModel, iteration: int | None = None) -> None:
         del iteration
         target_list = []
         source_list = []
@@ -200,8 +200,8 @@ class EMAModelTracker(torch.nn.Module):
 
     @classmethod
     def initialize_multi_rank_ema(
-        cls, model: torch.nn.Module, rate: Union[float, List[float]], num: int = 1, enabled: bool = True
-    ) -> Optional[EMAModelTracker]:
+        cls, model: torch.nn.Module, rate: float | list[float], num: int = 1, enabled: bool = True
+    ) -> EMAModelTracker | None:
         """
         Class method to initialize per rank EMA Model Tracker with different rate.
         Each rank will have a different rate based on the given configuration, resulting in different EMA weights.
@@ -257,7 +257,7 @@ class PowerEMATracker(EMAModelTracker):
         self.exp = np.roots([1, 7, 16 - s**-2, 12 - s**-2]).real.max()
 
     @torch.no_grad()
-    def update_average(self, model: ImaginaireModel, iteration: Optional[int] = None) -> None:
+    def update_average(self, model: ImaginaireModel, iteration: int | None = None) -> None:
         if iteration == 0:
             beta = 0.0
         else:
@@ -270,7 +270,7 @@ class PowerEMATracker(EMAModelTracker):
     @classmethod
     def initialize_multi_rank_ema(
         cls, model: torch.nn.Module, rate: float, num: int, enabled: bool = True
-    ) -> Optional[PowerEMATracker]:
+    ) -> PowerEMATracker | None:
         """
         Class method to initialize per rank EMA Model Tracker with different rate.
         Each rank will have a different rate based on the given configuration, resulting in different EMA weights.

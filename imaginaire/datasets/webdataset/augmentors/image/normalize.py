@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
 
 import torch
 import torchvision.transforms.functional as transforms_F
@@ -22,7 +21,7 @@ from imaginaire.datasets.webdataset.augmentors.augmentor import Augmentor
 
 
 class Normalize(Augmentor):
-    def __init__(self, input_keys: list, output_keys: Optional[list] = None, args: Optional[dict] = None) -> None:
+    def __init__(self, input_keys: list, output_keys: list | None = None, args: dict | None = None) -> None:
         super().__init__(input_keys, output_keys, args)
 
     def __call__(self, data_dict: dict) -> dict:

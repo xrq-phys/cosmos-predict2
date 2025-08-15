@@ -14,7 +14,8 @@
 # limitations under the License.
 
 import inspect
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
 
 import torch
 from torch.utils.data import Dataset
@@ -148,7 +149,7 @@ class CombinedDictDataset(torch.utils.data.Dataset):
     dict_keys(['dataset1', 'dataset2'])
     """
 
-    def __init__(self, **datasets: Dict[str, Dataset]) -> None:
+    def __init__(self, **datasets: dict[str, Dataset]) -> None:
         """
         Initializes the CombinedDictDataset with multiple datasets.
 
@@ -163,7 +164,7 @@ class CombinedDictDataset(torch.utils.data.Dataset):
     def __len__(self) -> int:
         return self.max_length
 
-    def __getitem__(self, index: int) -> Dict[str, Any]:
+    def __getitem__(self, index: int) -> dict[str, Any]:
         """
         Retrieves an item from each dataset at the specified index, combines them into a dictionary,
         and returns the dictionary. Each key in the dictionary corresponds to one of the dataset names provided

@@ -15,7 +15,6 @@
 
 from contextlib import nullcontext
 from functools import partial
-from typing import Optional
 
 import torch
 import torch.distributed as dist
@@ -64,7 +63,7 @@ class EveryNDrawSampleMultiviewVideo(EveryNDrawSample):
         n_view_embed=None,
         dataset_name=None,
         ctrl_hint_keys=None,
-        control_weights=[1.0],
+        control_weights=[1.0],  # noqa: B006
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -111,7 +110,7 @@ class EveryNDrawSampleMultiviewVideo(EveryNDrawSample):
                 frame = self._ensure_even_dimensions(frame)
                 writer.write(frame)
 
-    def run_save(self, to_show, batch_size, n_views, base_fp_wo_ext) -> Optional[str]:
+    def run_save(self, to_show, batch_size, n_views, base_fp_wo_ext) -> str | None:
         to_show = (1.0 + torch.stack(to_show, dim=0).clamp(-1, 1)) / 2.0  # [n, b, c, t, h, w]
         n_viz_sample = min(self.n_viz_sample, batch_size)
 

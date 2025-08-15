@@ -14,7 +14,6 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import List, Tuple
 
 import torch
 import wandb
@@ -25,7 +24,7 @@ from imaginaire.utils.callback import Callback
 
 
 @torch.jit.script
-def _fused_nan_to_num(params: List[torch.Tensor]):
+def _fused_nan_to_num(params: list[torch.Tensor]):
     for param in params:
         torch.nan_to_num(param, nan=0.0, posinf=0.0, neginf=0.0, out=param)
 
@@ -43,7 +42,7 @@ class _MagnitudeRecord:
         self.state += cur_state
         self.iter_count += 1
 
-    def get_stat(self) -> Tuple[float, float]:
+    def get_stat(self) -> tuple[float, float]:
         if self.iter_count > 0:
             avg_state = self.state / self.iter_count
             avg_state = avg_state.item()

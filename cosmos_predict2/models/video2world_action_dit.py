@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -69,14 +68,14 @@ class ActionConditionedMinimalV1LVGDiT(MinimalV1LVGDiT):
         x_B_C_T_H_W: torch.Tensor,
         timesteps_B_T: torch.Tensor,
         crossattn_emb: torch.Tensor,
-        condition_video_input_mask_B_C_T_H_W: Optional[torch.Tensor] = None,
-        fps: Optional[torch.Tensor] = None,
-        padding_mask: Optional[torch.Tensor] = None,
-        data_type: Optional[DataType] = DataType.VIDEO,
+        condition_video_input_mask_B_C_T_H_W: torch.Tensor | None = None,
+        fps: torch.Tensor | None = None,
+        padding_mask: torch.Tensor | None = None,
+        data_type: DataType | None = DataType.VIDEO,
         use_cuda_graphs: bool = False,
-        action: Optional[torch.Tensor] = None,
+        action: torch.Tensor | None = None,
         **kwargs,
-    ) -> torch.Tensor | List[torch.Tensor] | Tuple[torch.Tensor, List[torch.Tensor]]:
+    ) -> torch.Tensor | list[torch.Tensor] | tuple[torch.Tensor, list[torch.Tensor]]:
         del kwargs
 
         if data_type == DataType.VIDEO:
@@ -125,7 +124,7 @@ class ActionConditionedMinimalV1LVGDiT(MinimalV1LVGDiT):
             )
 
         if use_cuda_graphs:
-            shapes_key = create_cuda_graph(
+            shapes_key = create_cuda_graph(  # noqa: F821
                 self.cuda_graphs,
                 self.blocks,
                 x_B_T_H_W_D,

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import pandas as pd
 import psutil
@@ -28,11 +28,11 @@ from imaginaire.utils import distributed, log
 
 
 def log_prof_data(
-    data_list: List[Dict[str, Any]],
+    data_list: list[dict[str, Any]],
     iteration: int,
-) -> Tuple[pd.DataFrame]:
+) -> tuple[pd.DataFrame]:
     # Create a table to log data with rank information
-    columns = ["iteration", "rank"] + list(data_list[0].keys())
+    columns = ["iteration", "rank"] + list(data_list[0].keys())  # noqa: RUF005
     data = []
 
     # Initialize dictionaries to store min and max values for each metric
@@ -104,7 +104,7 @@ class DeviceMonitor(EveryN):
         iteration: int,
     ) -> None:
         cur_process = psutil.Process(os.getpid())
-        cpu_memory_usage = sum(p.memory_info().rss for p in [cur_process] + cur_process.children(recursive=True))
+        cpu_memory_usage = sum(p.memory_info().rss for p in [cur_process] + cur_process.children(recursive=True))  # noqa: RUF005
         cpu_mem_gb = cpu_memory_usage / (1024**3)
 
         peak_gpu_mem_gb = torch.cuda.max_memory_allocated() / (1024**3)

@@ -18,15 +18,18 @@ target-version = "py310"
 
 [lint]
 select = [
-    # "B", # bugbear
-    # "E", # pycodestyle errors
+    "B", # bugbear
+    "E", # pycodestyle errors
     "I", # isort
-    # "ISC", # flake8-implicit-str-concat
-    # "F", # pyflakes
-    # "UP", # pyupgrade
-    # "RUF", # ruff
+    "ISC", # flake8-implicit-str-concat
+    "F", # pyflakes
+    "UP", # pyupgrade
+    "RUF", # ruff
 ]
 ignore = [
-    "E501", # line too long
+    "E402", # 	module-import-not-at-top-of-file
+    "E501", # line-too-long
+    "F841", # unused-variable
+    "UP038", # non-pep604-isinstance
 ]
 fixable = ["ALL"]

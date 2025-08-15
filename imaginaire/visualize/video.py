@@ -12,7 +12,7 @@
 # dir@exchange.nvidia.com.
 # -----------------------------------------------------------------------------
 
-from typing import IO, Any, Union
+from typing import IO, Any
 
 import cv2
 import numpy as np
@@ -42,7 +42,7 @@ def save_video(grid, video_name, fps=30):
 
 
 def save_img_or_video(
-    sample_C_T_H_W_in01: Tensor, save_fp_wo_ext: Union[str, IO[Any]], fps: int = 24, quality=None, ffmpeg_params=None
+    sample_C_T_H_W_in01: Tensor, save_fp_wo_ext: str | IO[Any], fps: int = 24, quality=None, ffmpeg_params=None
 ) -> None:
     """
     Save a tensor as an image or video file based on shape

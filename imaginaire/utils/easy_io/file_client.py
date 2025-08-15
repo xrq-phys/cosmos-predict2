@@ -14,9 +14,10 @@
 # limitations under the License.
 
 import inspect
+from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator, Iterator, Optional, Tuple, Union
+from typing import Any
 
 from imaginaire.utils.easy_io.backends import BaseStorageBackend, HTTPBackend, LocalBackend
 
@@ -73,17 +74,17 @@ class FileClient:
         client (:obj:`BaseStorageBackend`): The backend object.
     """
 
-    _backends = {
+    _backends = {  # noqa: RUF012
         "disk": HardDiskBackend,
         "http": HTTPBackend,
     }
 
-    _prefix_to_backends: dict = {
+    _prefix_to_backends: dict = {  # noqa: RUF012
         "http": HTTPBackend,
         "https": HTTPBackend,
     }
 
-    _instances: dict = {}
+    _instances: dict = {}  # noqa: RUF012
 
     client: Any
 
@@ -129,7 +130,7 @@ class FileClient:
         return self.client.allow_symlink
 
     @staticmethod
-    def parse_uri_prefix(uri: Union[str, Path]) -> Optional[str]:
+    def parse_uri_prefix(uri: str | Path) -> str | None:
         """Parse the prefix of a uri.
 
         Args:
@@ -154,8 +155,8 @@ class FileClient:
     @classmethod
     def infer_client(
         cls,
-        file_client_args: Optional[dict] = None,
-        uri: Optional[Union[str, Path]] = None,
+        file_client_args: dict | None = None,
+        uri: str | Path | None = None,
     ) -> "FileClient":
         """Infer a suitable file client based on the URI and arguments.
 
@@ -272,7 +273,7 @@ class FileClient:
 
         return _register
 
-    def get(self, filepath: Union[str, Path]) -> Union[bytes, memoryview]:
+    def get(self, filepath: str | Path) -> bytes | memoryview:
         """Read data from a given ``filepath`` with 'rb' mode.
 
         Note:
@@ -290,7 +291,7 @@ class FileClient:
         """
         return self.client.get(filepath)
 
-    def get_text(self, filepath: Union[str, Path], encoding="utf-8") -> str:
+    def get_text(self, filepath: str | Path, encoding="utf-8") -> str:
         """Read data from a given ``filepath`` with 'r' mode.
 
         Args:
@@ -303,7 +304,7 @@ class FileClient:
         """
         return self.client.get_text(filepath, encoding)
 
-    def put(self, obj: bytes, filepath: Union[str, Path]) -> None:
+    def put(self, obj: bytes, filepath: str | Path) -> None:
         """Write data to a given ``filepath`` with 'wb' mode.
 
         Note:
@@ -316,7 +317,7 @@ class FileClient:
         """
         self.client.put(obj, filepath)
 
-    def put_text(self, obj: str, filepath: Union[str, Path]) -> None:
+    def put_text(self, obj: str, filepath: str | Path) -> None:
         """Write data to a given ``filepath`` with 'w' mode.
 
         Note:
@@ -331,7 +332,7 @@ class FileClient:
         """
         self.client.put_text(obj, filepath)
 
-    def remove(self, filepath: Union[str, Path]) -> None:
+    def remove(self, filepath: str | Path) -> None:
         """Remove a file.
 
         Args:
@@ -339,7 +340,7 @@ class FileClient:
         """
         self.client.remove(filepath)
 
-    def exists(self, filepath: Union[str, Path]) -> bool:
+    def exists(self, filepath: str | Path) -> bool:
         """Check whether a file path exists.
 
         Args:
@@ -350,7 +351,7 @@ class FileClient:
         """
         return self.client.exists(filepath)
 
-    def isdir(self, filepath: Union[str, Path]) -> bool:
+    def isdir(self, filepath: str | Path) -> bool:
         """Check whether a file path is a directory.
 
         Args:
@@ -363,7 +364,7 @@ class FileClient:
         """
         return self.client.isdir(filepath)
 
-    def isfile(self, filepath: Union[str, Path]) -> bool:
+    def isfile(self, filepath: str | Path) -> bool:
         """Check whether a file path is a file.
 
         Args:
@@ -375,7 +376,7 @@ class FileClient:
         """
         return self.client.isfile(filepath)
 
-    def join_path(self, filepath: Union[str, Path], *filepaths: Union[str, Path]) -> str:
+    def join_path(self, filepath: str | Path, *filepaths: str | Path) -> str:
         r"""Concatenate all file paths.
 
         Join one or more filepath components intelligently. The return value
@@ -390,7 +391,7 @@ class FileClient:
         return self.client.join_path(filepath, *filepaths)
 
     @contextmanager
-    def get_local_path(self, filepath: Union[str, Path]) -> Generator[Union[str, Path], None, None]:
+    def get_local_path(self, filepath: str | Path) -> Generator[str | Path, None, None]:
         """Download data from ``filepath`` and write the data to local path.
 
         ``get_local_path`` is decorated by :meth:`contxtlib.contextmanager`. It
@@ -420,10 +421,10 @@ class FileClient:
 
     def list_dir_or_file(  # pylint: disable=too-many-arguments
         self,
-        dir_path: Union[str, Path],
+        dir_path: str | Path,
         list_dir: bool = True,
         list_file: bool = True,
-        suffix: Optional[Union[str, Tuple[str]]] = None,
+        suffix: str | tuple[str] | None = None,
         recursive: bool = False,
     ) -> Iterator[str]:
         """Scan a directory to find the interested directories or files in

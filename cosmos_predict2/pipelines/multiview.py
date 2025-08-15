@@ -15,7 +15,8 @@
 
 import math
 import os
-from typing import Any, Callable, Dict, Tuple
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import torch
@@ -94,7 +95,7 @@ def read_and_process_multiview_video(
         video_frames, video_metadata = easy_io.load(video_path)  # Returns (T, H, W, C) numpy array
         log.info(f"Loaded video with shape {video_frames.shape}, metadata: {video_metadata}")
     except Exception as e:
-        raise ValueError(f"Failed to load video {video_path}: {e}")
+        raise ValueError(f"Failed to load video {video_path}: {e}")  # noqa: B904
 
     # Convert numpy array to tensor and rearrange dimensions
     video_tensor = torch.from_numpy(video_frames).float() / 255.0  # Convert to [0, 1] range
@@ -142,7 +143,7 @@ def read_and_process_multiview_video(
 
             # Calculate scaling based on aspect ratio
             scaling_ratio = max((target_w / W), (target_h / H))
-            resizing_shape = (int(math.ceil(scaling_ratio * H)), int(math.ceil(scaling_ratio * W)))
+            resizing_shape = (int(math.ceil(scaling_ratio * H)), int(math.ceil(scaling_ratio * W)))  # noqa: RUF046
 
             # Resize and crop the extracted frames
             extracted_frames = torchvision.transforms.functional.resize(extracted_frames, resizing_shape)
@@ -323,7 +324,7 @@ class MultiviewPipeline(Video2WorldPipeline):
         B, C, T, H, W = video.shape
         t5_text_embeddings = torch.zeros(B, n_views * 512, 1024, dtype=self.torch_dtype).to(self.device)
         if prompt.endswith(".txt"):
-            prompts = open(prompt, "r").read().splitlines()
+            prompts = open(prompt).read().splitlines()
             assert len(prompts) == n_views, (
                 f"Number of prompts {len(prompts)} should be equal to number of views {n_views}"
             )
@@ -359,7 +360,7 @@ class MultiviewPipeline(Video2WorldPipeline):
 
         # Handle negative prompts for classifier-free guidance
         if negative_prompt:
-            log.warning(f"Negative prompt is only applied to the first view")
+            log.warning("Negative prompt is only applied to the first view")
             neg_t5_text_embeddings = torch.zeros(B, n_views * 512, 1024, dtype=self.torch_dtype).to(self.device)
             neg_t5_text_embeddings[:, 0:512] = self.encode_prompt(negative_prompt).to(dtype=self.torch_dtype)
             data_batch["neg_t5_text_embeddings"] = neg_t5_text_embeddings
@@ -431,7 +432,7 @@ class MultiviewPipeline(Video2WorldPipeline):
         decoded_state = torch.cat(decoded_state_list[0:n_views], dim=2)  # [B, C, V * T, H, W]
         return decoded_state
 
-    def _normalize_video_databatch_inplace(self, data_batch: dict[str, torch.Tensor], input_key: str = None) -> None:
+    def _normalize_video_databatch_inplace(self, data_batch: dict[str, torch.Tensor], input_key: str = None) -> None:  # noqa: RUF013
         input_key = self.input_video_key if input_key is None else input_key
         if input_key in data_batch:
             num_video_frames_per_view = self.tokenizer.get_pixel_num_frames(self.config.state_t)
@@ -477,7 +478,7 @@ class MultiviewPipeline(Video2WorldPipeline):
 
     def get_data_and_condition(
         self, data_batch: dict[str, torch.Tensor]
-    ) -> Tuple[torch.Tensor, torch.Tensor, TextCondition]:
+    ) -> tuple[torch.Tensor, torch.Tensor, TextCondition]:
         self._normalize_video_databatch_inplace(data_batch)
         self._augment_image_dim_inplace(data_batch)
         is_image_batch = self.is_image_batch(data_batch)
@@ -501,7 +502,7 @@ class MultiviewPipeline(Video2WorldPipeline):
 
     def get_x0_fn_from_batch(
         self,
-        data_batch: Dict,
+        data_batch: dict,
         guidance: float = 1.5,
         is_negative_prompt: bool = False,
         use_cuda_graphs: bool = False,
@@ -700,7 +701,7 @@ class MultiviewPipeline(Video2WorldPipeline):
 
         x_sigma_max = (
             misc.arch_invariant_rand(
-                (n_sample,) + tuple(state_shape),
+                (n_sample,) + tuple(state_shape),  # noqa: RUF005
                 torch.float32,
                 self.tensor_kwargs["device"],
                 seed,
@@ -800,7 +801,7 @@ class MultiviewPipeline(Video2WorldPipeline):
         data_batch,
         guidance: float = 7.0,
         seed: int = 0,
-        state_shape: Tuple | None = None,
+        state_shape: tuple | None = None,
         n_sample: int | None = None,
         is_negative_prompt: bool = False,
         num_steps: int = 35,
@@ -817,7 +818,7 @@ class MultiviewPipeline(Video2WorldPipeline):
 
         x_sigma_max = (
             misc.arch_invariant_rand(
-                (n_sample,) + tuple(state_shape),
+                (n_sample,) + tuple(state_shape),  # noqa: RUF005
                 torch.float32,
                 self.tensor_kwargs["device"],
                 seed,

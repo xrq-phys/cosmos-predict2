@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import time
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import omegaconf
 import torch
@@ -106,7 +107,7 @@ class Callback:
     All callbacks should inherit from this class and adhere to the established method names and signatures.
     """
 
-    def __init__(self, config: Optional["Config"] = None, trainer: Optional["ImaginaireTrainer"] = None):
+    def __init__(self, config: Config | None = None, trainer: ImaginaireTrainer | None = None):
         """Initializes a Callback object.
 
         Args:
@@ -254,7 +255,7 @@ class Callback:
         pass
 
     def on_load_checkpoint_end(
-        self, model: ImaginaireModel, iteration: int = 0, checkpoint_path: Optional[str] = None
+        self, model: ImaginaireModel, iteration: int = 0, checkpoint_path: str | None = None
     ) -> None:
         pass
 
@@ -446,8 +447,8 @@ class LowPrecisionCallback(Callback):
         if iteration % self.update_iter == 0:
             if getattr(optimizer, "master_weights", False):
                 params, master_params = [], []
-                for group, group_master in zip(optimizer.param_groups, optimizer.param_groups_master):
-                    for p, p_master in zip(group["params"], group_master["params"]):
+                for group, group_master in zip(optimizer.param_groups, optimizer.param_groups_master, strict=False):
+                    for p, p_master in zip(group["params"], group_master["params"], strict=False):
                         params.append(get_local_tensor_if_DTensor(p.data))
                         master_params.append(p_master.data)
                 torch._foreach_copy_(params, master_params)
@@ -459,8 +460,8 @@ class NVTXCallback(Callback):
     def __init__(
         self,
         synchronize: bool = False,
-        config: Optional["Config"] = None,
-        trainer: Optional["ImaginaireTrainer"] = None,
+        config: Config | None = None,
+        trainer: ImaginaireTrainer | None = None,
     ):
         super().__init__(config, trainer)
         self.synchronize = synchronize

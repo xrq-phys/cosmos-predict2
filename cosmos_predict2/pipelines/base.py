@@ -62,7 +62,7 @@ class BasePipeline(torch.nn.Module):
             blur = GaussianBlur(kernel_size=blur_kernel_size, sigma=blur_sigma)
             height, width = value.shape[-2:]
             weight = torch.ones_like(value)
-            for latent, mask, scale in zip(latents, masks, scales):
+            for latent, mask, scale in zip(latents, masks, scales, strict=False):
                 mask = self.preprocess_image(mask.resize((width, height))).mean(dim=1, keepdim=True) > 0
                 mask = mask.repeat(1, latent.shape[1], 1, 1).to(dtype=latent.dtype, device=latent.device)
                 mask = blur(mask)
@@ -90,7 +90,7 @@ class BasePipeline(torch.nn.Module):
         else:
             noise_pred_locals = [
                 inference_callback(prompt_emb_local, special_kwargs)
-                for prompt_emb_local, special_kwargs in zip(prompt_emb_locals, special_local_kwargs_list)
+                for prompt_emb_local, special_kwargs in zip(prompt_emb_locals, special_local_kwargs_list, strict=False)
             ]
         noise_pred = self.merge_latents(noise_pred_global, noise_pred_locals, masks, mask_scales)
         return noise_pred
@@ -109,7 +109,7 @@ class BasePipeline(torch.nn.Module):
     def enable_cpu_offload(self):
         self.cpu_offload = True
 
-    def load_models_to_device(self, loadmodel_names=[]):
+    def load_models_to_device(self, loadmodel_names=[]):  # noqa: B006
         # only load models to device if cpu_offload is enabled
         if not self.cpu_offload:
             return

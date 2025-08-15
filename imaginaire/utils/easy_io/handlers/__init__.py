@@ -24,6 +24,6 @@ __all__ = [
     "JsonHandler",
     "PickleHandler",
     "YamlHandler",
-    "register_handler",
     "file_handlers",
+    "register_handler",
 ]

@@ -316,7 +316,12 @@ def split_video_into_windows(video_path, output_dir, task_id, episode_id, window
 
 
 def split_videos(
-    data_dir, camera_name, task_ids=None, window_size=5.0, min_last_window=7.5, val_episode_ids=[]
+    data_dir,
+    camera_name,
+    task_ids=None,
+    window_size=5.0,
+    min_last_window=7.5,
+    val_episode_ids=[],  # noqa: B006
 ) -> None:
     """Split all videos for specified camera into windows."""
     # Check ffmpeg availability
@@ -496,7 +501,7 @@ def extract_captions_from_jsonl(data_dir, camera_name, val_episode_ids) -> bool:
 
     # Read JSONL file and extract captions
     try:
-        with open(jsonl_path, "r") as f:
+        with open(jsonl_path) as f:
             for line in f:
                 if line.strip():  # Skip empty lines
                     data = json.loads(line)

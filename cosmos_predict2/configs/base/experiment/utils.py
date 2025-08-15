@@ -14,7 +14,6 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
@@ -22,5 +21,5 @@ class Experiment:
     job_group: str
     job_exp: str
     nnode: int
-    command_args: List[str]
+    command_args: list[str]
     job_name: str = None

@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
 
 import omegaconf
 import torch
@@ -24,7 +23,7 @@ from imaginaire.datasets.webdataset.augmentors.image.misc import obtain_augmenta
 
 
 class ReflectionPadding(Augmentor):
-    def __init__(self, input_keys: list, output_keys: Optional[list] = None, args: Optional[dict] = None) -> None:
+    def __init__(self, input_keys: list, output_keys: list | None = None, args: dict | None = None) -> None:
         super().__init__(input_keys, output_keys, args)
 
     def __call__(self, data_dict: dict) -> dict:
@@ -57,7 +56,7 @@ class ReflectionPadding(Augmentor):
         padding_bottom = target_h - orig_h - padding_top
         padding_vals = [padding_left, padding_top, padding_right, padding_bottom]
 
-        for inp_key, out_key in zip(self.input_keys, self.output_keys):
+        for inp_key, out_key in zip(self.input_keys, self.output_keys, strict=False):
             if max(padding_vals[0], padding_vals[2]) >= orig_w or max(padding_vals[1], padding_vals[3]) >= orig_h:
                 # In this case, we can't perform reflection padding. This is because padding values
                 # are larger than the image size. So, perform edge padding instead.

@@ -238,12 +238,12 @@ class MultiviewDataset(Dataset):
             data["ref_cam_view_idx_sample_position"] = torch.ones(1, dtype=torch.int64) * (-1)
             return data
         except Exception:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 f"Invalid data encountered: {self.samples[index]['video_path']}. Skipped "
                 f"(by randomly sampling another sample in the same dataset)."
             )
-            warnings.warn("FULL TRACEBACK:")
-            warnings.warn(traceback.format_exc())
+            warnings.warn("FULL TRACEBACK:")  # noqa: B028
+            warnings.warn(traceback.format_exc())  # noqa: B028
             self.wrong_number += 1
             print(self.wrong_number)
             return self[np.random.randint(len(self.samples))]
@@ -279,13 +279,11 @@ if __name__ == "__main__":
     for idx in indices:
         data = dataset[idx]
         print(
-            (
-                f"{idx=} "
-                f"{data['video'].sum()=}\n"
-                f"{data['video'].shape=}\n"
-                f"{data['video_name']=}\n"
-                f"{data['t5_text_embeddings'].shape=}\n"
-                f"{data['latent_view_indices_B_T'].shape=}\n"
-                "---"
-            )
+            f"{idx=} "
+            f"{data['video'].sum()=}\n"
+            f"{data['video'].shape=}\n"
+            f"{data['video_name']=}\n"
+            f"{data['t5_text_embeddings'].shape=}\n"
+            f"{data['latent_view_indices_B_T'].shape=}\n"
+            "---"
         )

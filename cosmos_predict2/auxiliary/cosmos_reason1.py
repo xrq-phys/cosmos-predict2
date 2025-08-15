@@ -31,7 +31,7 @@ SYSTEM_PROMPT_REFINE = (
     """1. For overly brief user inputs, reasonably infer and supplement details without changing the original meaning, making the image more complete and visually appealing;\n"""
     """2. Improve the characteristics of the main subject in the user's description (such as appearance, actions, expression, quantity, ethnicity, posture, surrounding environment etc.), rendering style, spatial relationships, and camera angles;\n"""
     """3. The overall output should be in English, retaining original text in quotes and book titles as well as important input information without rewriting them;\n"""
-    """4. The prompt should match the user’s intent and provide a precise and detailed style description. If the user has not specified a style, you need to carefully analyze the style of the user's provided photo and use that as a reference for rewriting;\n"""
+    """4. The prompt should match the user’s intent and provide a precise and detailed style description. If the user has not specified a style, you need to carefully analyze the style of the user's provided photo and use that as a reference for rewriting;\n"""  # noqa: RUF001
     """5. You need to emphasize movement information in the input and different camera angles;\n"""
     """6. Your output should convey natural movement attributes, incorporating natural actions related to the described subject category, using simple and direct verbs as much as possible;\n"""
     """7. You should reference the detailed information in the image, such as character actions, clothing, backgrounds, and emphasize the details in the photo;\n"""
@@ -145,7 +145,7 @@ class CosmosReason1(torch.nn.Module):
             # Filter for ASCII-only tokens
             self.allowed_token_ids = [
                 token_id
-                for token_id, decoded in zip(all_token_ids, decoded_tokens)
+                for token_id, decoded in zip(all_token_ids, decoded_tokens, strict=False)
                 if all(ord(c) < 128 for c in decoded)
             ]
         except Exception:
@@ -200,7 +200,9 @@ class CosmosReason1(torch.nn.Module):
         inputs = inputs.to("cuda")
         logits_processor = LogitsProcessorList([AllowedTokensLogitsProcessor(self.allowed_token_ids)])
         generated_ids = self.model.generate(**inputs, max_new_tokens=512, logits_processor=logits_processor)
-        generated_ids_trimmed = [out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)]
+        generated_ids_trimmed = [
+            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids, strict=False)
+        ]
         output_text = self.processor.batch_decode(
             generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )[0]

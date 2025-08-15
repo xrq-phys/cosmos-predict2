@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import random
-from typing import Optional
 
 import numpy as np
 import torch
@@ -77,7 +76,7 @@ def pad_and_resize(
 
 
 class TextTransformForImage(Augmentor):
-    def __init__(self, input_keys: list, output_keys: Optional[list] = None, args: Optional[dict] = None) -> None:
+    def __init__(self, input_keys: list, output_keys: list | None = None, args: dict | None = None) -> None:
         super().__init__(input_keys, output_keys, args)
 
     def __call__(self, data_dict: dict) -> dict:
@@ -90,7 +89,7 @@ class TextTransformForImage(Augmentor):
         """
 
         caption_type = self.args["caption_type"]
-        embedding_key_in_dict = _CAPTION_EMBEDDING_KEY_MAPPING_IMAGES[caption_type]
+        embedding_key_in_dict = _CAPTION_EMBEDDING_KEY_MAPPING_IMAGES[caption_type]  # noqa: F821
         embedding_type = self.args["embedding_type"]
         embedding_input_key_prefix = "" if embedding_type == "t5_xxl" else "umt5_"
 

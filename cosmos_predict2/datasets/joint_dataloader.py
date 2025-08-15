@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, Union
 
 import numpy as np
 import torch
@@ -27,9 +26,7 @@ class IterativeJointDataLoader(webdataset.WebLoader):
     A joint dataloader that supports loading both images and videos.
     """
 
-    def __init__(
-        self, dataloaders: Dict[str, Dict[str, Union[torch.utils.data.DataLoader, webdataset.WebLoader, int]]]
-    ):
+    def __init__(self, dataloaders: dict[str, dict[str, torch.utils.data.DataLoader | webdataset.WebLoader | int]]):
         """
         Initialize the JointDataLoader with multiple datasets.
 
@@ -95,9 +92,7 @@ class RandomJointDataLoader(webdataset.WebLoader):
     """
 
     # def __init__(self, **kwargs):
-    def __init__(
-        self, dataloaders: Dict[str, Dict[str, Union[torch.utils.data.DataLoader, webdataset.WebLoader, int]]]
-    ):
+    def __init__(self, dataloaders: dict[str, dict[str, torch.utils.data.DataLoader | webdataset.WebLoader | int]]):
         """
         Initialize the JointDataLoader with multiple datasets.
 

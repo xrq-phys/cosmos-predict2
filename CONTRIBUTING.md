@@ -10,6 +10,14 @@ To test your changes locally, run
 just test
 ```
 
+This will also run auto-fixes and linting. We recommend that you commit your changes first.
+
+To see all available commands, run
+
+```shell
+just
+```
+
 ## Code Reviews
 
 All submissions, including submissions by project members, require review. We use GitHub pull requests for this purpose. Consult

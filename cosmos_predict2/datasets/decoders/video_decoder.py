@@ -16,7 +16,6 @@
 import io
 import re
 from random import randint
-from typing import List, Tuple
 
 import decord
 import numpy as np
@@ -60,7 +59,7 @@ def sample_chunk_index_from_chunked_video(
     n_video_frames: int,
     n_target_frames: int,
     chunk_size: int,
-) -> Tuple[int, int, str]:
+) -> tuple[int, int, str]:
     """
     Sample a chunk from the chunked videos. Our videos are stored as regular mp4 files but with chunked captions. There is one caption per [chunk_size] frames.
     If the last chunk has frames >= chunk_size / 2, it will be treated as a separate chunk and has its own caption. Otherwise, it will be treated as part of the previous chunk.
@@ -229,7 +228,7 @@ def get_frame_indices_w_lowered_fps(
     min_fps_thres: int,
     max_fps_thres: int,
     n_target_frames: int,
-) -> Tuple[List[int], float]:
+) -> tuple[list[int], float]:
     """Generates frame indices for video sampling with FPS control.
 
     This function determines valid stride lengths for sampling frames from a video,

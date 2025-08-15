@@ -54,7 +54,7 @@ class Predict2MultiviewModelConfig:
     adjust_video_noise: bool = True
 
     # This is used for the original way to load models
-    model_manager_config: Predict2ModelManagerConfig = Predict2ModelManagerConfig()
+    model_manager_config: Predict2ModelManagerConfig = Predict2ModelManagerConfig()  # noqa: RUF009
     # This is a new way to load models
     pipe_config: MultiviewPipelineConfig = PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES
     # debug flag

@@ -111,12 +111,12 @@ class ImageDataset(Dataset):
 
             return data
         except Exception:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 f"Invalid data encountered: {self.image_paths[index]}. Skipped "
                 f"(by randomly sampling another sample in the same dataset)."
             )
-            warnings.warn("FULL TRACEBACK:")
-            warnings.warn(traceback.format_exc())
+            warnings.warn("FULL TRACEBACK:")  # noqa: B028
+            warnings.warn(traceback.format_exc())  # noqa: B028
             self.wrong_number += 1
             log.info(self.wrong_number, rank0_only=False)
             return self[np.random.randint(len(self.samples))]
@@ -131,4 +131,4 @@ if __name__ == "__main__":
     indices = [0, 13, -1]
     for idx in indices:
         data = dataset[idx]
-        log.info((f"{idx=} {data['images'].sum()=}\n{data['images'].shape=}\n{data['t5_text_embeddings'].shape=}\n---"))
+        log.info(f"{idx=} {data['images'].sum()=}\n{data['images'].shape=}\n{data['t5_text_embeddings'].shape=}\n---")

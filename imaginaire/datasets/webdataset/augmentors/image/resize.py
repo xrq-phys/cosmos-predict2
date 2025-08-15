@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
 
 import omegaconf
 import torchvision.transforms.functional as transforms_F
@@ -23,7 +22,7 @@ from imaginaire.datasets.webdataset.augmentors.image.misc import obtain_augmenta
 
 
 class ResizeSmallestSide(Augmentor):
-    def __init__(self, input_keys: list, output_keys: Optional[list] = None, args: Optional[dict] = None) -> None:
+    def __init__(self, input_keys: list, output_keys: list | None = None, args: dict | None = None) -> None:
         super().__init__(input_keys, output_keys, args)
 
     def __call__(self, data_dict: dict) -> dict:
@@ -39,7 +38,7 @@ class ResizeSmallestSide(Augmentor):
             self.output_keys = self.input_keys
         assert self.args is not None, "Please specify args in augmentations"
 
-        for inp_key, out_key in zip(self.input_keys, self.output_keys):
+        for inp_key, out_key in zip(self.input_keys, self.output_keys, strict=False):
             out_size = obtain_augmentation_size(data_dict, self.args)
             assert isinstance(out_size, int), "Arg size in resize should be an integer"
             data_dict[out_key] = transforms_F.resize(
@@ -54,7 +53,7 @@ class ResizeSmallestSide(Augmentor):
 
 
 class ResizeLargestSide(Augmentor):
-    def __init__(self, input_keys: list, output_keys: Optional[list] = None, args: Optional[dict] = None) -> None:
+    def __init__(self, input_keys: list, output_keys: list | None = None, args: dict | None = None) -> None:
         super().__init__(input_keys, output_keys, args)
 
     def __call__(self, data_dict: dict) -> dict:
@@ -70,7 +69,7 @@ class ResizeLargestSide(Augmentor):
             self.output_keys = self.input_keys
         assert self.args is not None, "Please specify args in augmentations"
 
-        for inp_key, out_key in zip(self.input_keys, self.output_keys):
+        for inp_key, out_key in zip(self.input_keys, self.output_keys, strict=False):
             out_size = obtain_augmentation_size(data_dict, self.args)
             assert isinstance(out_size, int), "Arg size in resize should be an integer"
             orig_w, orig_h = obtain_image_size(data_dict, self.input_keys)
@@ -90,7 +89,7 @@ class ResizeLargestSide(Augmentor):
 
 
 class ResizeSmallestSideAspectPreserving(Augmentor):
-    def __init__(self, input_keys: list, output_keys: Optional[list] = None, args: Optional[dict] = None) -> None:
+    def __init__(self, input_keys: list, output_keys: list | None = None, args: dict | None = None) -> None:
         super().__init__(input_keys, output_keys, args)
 
     def __call__(self, data_dict: dict) -> dict:
@@ -123,7 +122,7 @@ class ResizeSmallestSideAspectPreserving(Augmentor):
             f"Resize error. orig {(orig_w, orig_h)} desire {img_size} compute {target_size}"
         )
 
-        for inp_key, out_key in zip(self.input_keys, self.output_keys):
+        for inp_key, out_key in zip(self.input_keys, self.output_keys, strict=False):
             data_dict[out_key] = transforms_F.resize(
                 data_dict[inp_key],
                 size=target_size,  # type: ignore
@@ -137,7 +136,7 @@ class ResizeSmallestSideAspectPreserving(Augmentor):
 
 
 class ResizeLargestSideAspectPreserving(Augmentor):
-    def __init__(self, input_keys: list, output_keys: Optional[list] = None, args: Optional[dict] = None) -> None:
+    def __init__(self, input_keys: list, output_keys: list | None = None, args: dict | None = None) -> None:
         super().__init__(input_keys, output_keys, args)
 
     def __call__(self, data_dict: dict) -> dict:
@@ -170,7 +169,7 @@ class ResizeLargestSideAspectPreserving(Augmentor):
             f"Resize error. orig {(orig_w, orig_h)} desire {img_size} compute {target_size}"
         )
 
-        for inp_key, out_key in zip(self.input_keys, self.output_keys):
+        for inp_key, out_key in zip(self.input_keys, self.output_keys, strict=False):
             data_dict[out_key] = transforms_F.resize(
                 data_dict[inp_key],
                 size=target_size,  # type: ignore

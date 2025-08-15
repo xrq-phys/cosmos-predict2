@@ -20,7 +20,7 @@ import json
 import os
 from abc import ABC, abstractmethod
 from io import BytesIO
-from typing import Any, List, Union
+from typing import Any
 
 
 # from https://docs.python.org/3/howto/descriptor.html#validator-class
@@ -42,7 +42,7 @@ class Validator(ABC):
     def validate(self, value):
         pass
 
-    def json(self):
+    def json(self):  # noqa: B027
         pass
 
 
@@ -65,7 +65,7 @@ class MultipleOf(Validator):
             try:
                 value = self.type_cast(value)
             except ValueError:
-                raise ValueError(f"Expected {value!r} to be castable to {self.type_cast!r}")
+                raise ValueError(f"Expected {value!r} to be castable to {self.type_cast!r}")  # noqa: B904
 
         if value % self.multiple_of != 0:
             raise ValueError(f"Expected {value!r} to be a multiple of {self.multiple_of!r}")
@@ -100,7 +100,7 @@ class OneOf(Validator):
             try:
                 value = self.type_cast(value)
             except ValueError:
-                raise ValueError(f"Expected {value!r} to be castable to {self.type_cast!r}")
+                raise ValueError(f"Expected {value!r} to be castable to {self.type_cast!r}")  # noqa: B904
 
         if value not in self.options:
             raise ValueError(f"Expected {value!r} to be one of {self.options!r}")
@@ -130,7 +130,7 @@ class HumanAttributes(Validator):
 
     # hard code the options for now
     # we extend this to init parameter as needed
-    valid_attributes = {
+    valid_attributes = {  # noqa: RUF012
         "emotion": ["angry", "contemptful", "disgusted", "fearful", "happy", "neutral", "sad", "surprised"],
         "race": ["asian", "indian", "black", "white", "middle eastern", "latino hispanic"],
         "gender": ["male", "female"],
@@ -165,7 +165,7 @@ class HumanAttributes(Validator):
                 attr_detected = False
                 for attr_label in self.valid_attributes[attr_key]:
                     if attr_string.startswith(attr_label):
-                        attr_string = attr_string[len(attr_label) + 1 :]  # noqa: E203
+                        attr_string = attr_string[len(attr_label) + 1 :]
                         attr_detected = True
                         break
 
@@ -363,7 +363,7 @@ class InputImage(Validator):
         self.hidden = hidden
         self.tooltip = tooltip
 
-    valid_formats = {
+    valid_formats = {  # noqa: RUF012
         "JPEG": ["jpeg", "jpg"],
         "JPEG2000": ["jp2"],
         "PNG": ["png"],
@@ -371,7 +371,7 @@ class InputImage(Validator):
         "BMP": ["bmp"],
     }
 
-    valid_extensions = {vi: k for k, v in valid_formats.items() for vi in v}
+    valid_extensions = {vi: k for k, v in valid_formats.items() for vi in v}  # noqa: RUF012
 
     def validate(self, value):
         _, ext = os.path.splitext(value).lower()
@@ -405,14 +405,14 @@ class MeshFormat(Validator):
     - or a list of valid formats such as "[obj, ply, usdz]"
     """
 
-    valid_formats = {"glb", "usdz", "obj", "ply"}
+    valid_formats = {"glb", "usdz", "obj", "ply"}  # noqa: RUF012
 
     def __init__(self, default="glb", hidden=False, tooltip=None):
         self.default = default
         self.hidden = hidden
         self.tooltip = tooltip
 
-    def validate(self, value: str) -> Union[str, List[str]]:
+    def validate(self, value: str) -> str | list[str]:
         try:
             # Attempt to parse the input as a Python list
             if value.startswith("[") and value.endswith("]"):
@@ -426,7 +426,7 @@ class MeshFormat(Validator):
                 raise ValueError(f"Expected {value!r} to be one of {MeshFormat.valid_formats} or a list of them")
         except (SyntaxError, ValueError) as e:
             # Handle case where the input is neither a valid single format nor a list of valid formats
-            raise ValueError(f"Invalid format specification: {value}. Error: {str(e)}")
+            raise ValueError(f"Invalid format specification: {value}. Error: {e!s}")  # noqa: B904
 
     def __repr__(self) -> str:
         return f"MeshFormat(default={self.default}, hidden={self.hidden})"
@@ -457,7 +457,7 @@ class JsonDict(Validator):
             dict = json.loads(value)
             return dict
         except json.JSONDecodeError as e:
-            raise ValueError(f"Expected {value!r} to be json  stringified dict. Error: {str(e)}")
+            raise ValueError(f"Expected {value!r} to be json  stringified dict. Error: {e!s}")  # noqa: B904
 
     def __repr__(self) -> str:
         return f"Dict({self.default=} {self.hidden=})"
@@ -484,7 +484,7 @@ class BytesIOType(Validator):
                 # Create a BytesIO stream from the decoded bytes
                 return BytesIO(decoded_bytes)
             except (base64.binascii.Error, ValueError) as e:
-                raise ValueError(f"Invalid Base64 encoded string: {e}")
+                raise ValueError(f"Invalid Base64 encoded string: {e}")  # noqa: B904
         elif isinstance(value, bytes):
             return BytesIO(value)
         elif isinstance(value, BytesIO):

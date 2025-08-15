@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -21,7 +21,7 @@ from imaginaire.utils import log
 
 
 class ContentSafetyGuardrail:
-    def is_safe(self, **kwargs) -> Tuple[bool, str]:
+    def is_safe(self, **kwargs) -> tuple[bool, str]:
         raise NotImplementedError("Child classes must implement the is_safe method")
 
 
@@ -43,7 +43,7 @@ class GuardrailRunner:
         self.generic_safe_msg = generic_safe_msg if generic_safe_msg else "Prompt is safe"
         self.postprocessors = postprocessors
 
-    def run_safety_check(self, input: Any) -> Tuple[bool, str]:
+    def run_safety_check(self, input: Any) -> tuple[bool, str]:
         """Run the safety check on the input."""
         if not self.safety_models:
             log.warning("No safety models found, returning safe")

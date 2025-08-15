@@ -104,7 +104,7 @@ class Resample(nn.Module):
         else:
             self.resample = nn.Identity()
 
-    def forward(self, x, feat_cache=None, feat_idx=[0]):
+    def forward(self, x, feat_cache=None, feat_idx=[0]):  # noqa: B006
         b, c, t, h, w = x.size()
         if self.mode == "upsample3d":
             if feat_cache is not None:
@@ -172,7 +172,7 @@ class ResidualBlock(nn.Module):
         )
         self.shortcut = CausalConv3d(in_dim, out_dim, 1) if in_dim != out_dim else nn.Identity()
 
-    def forward(self, x, feat_cache=None, feat_idx=[0]):
+    def forward(self, x, feat_cache=None, feat_idx=[0]):  # noqa: B006
         h = self.shortcut(x)
         for layer in self.residual:
             if isinstance(layer, CausalConv3d) and feat_cache is not None:
@@ -235,10 +235,10 @@ class Encoder3d(nn.Module):
         self,
         dim=128,
         z_dim=4,
-        dim_mult=[1, 2, 4, 4],
+        dim_mult=[1, 2, 4, 4],  # noqa: B006
         num_res_blocks=2,
-        attn_scales=[],
-        temperal_downsample=[True, True, False],
+        attn_scales=[],  # noqa: B006
+        temperal_downsample=[True, True, False],  # noqa: B006
         dropout=0.0,
     ):
         super().__init__()
@@ -250,7 +250,7 @@ class Encoder3d(nn.Module):
         self.temperal_downsample = temperal_downsample
 
         # dimensions
-        dims = [dim * u for u in [1] + dim_mult]
+        dims = [dim * u for u in [1] + dim_mult]  # noqa: RUF005
         scale = 1.0
 
         # init block
@@ -258,7 +258,7 @@ class Encoder3d(nn.Module):
 
         # downsample blocks
         downsamples = []
-        for i, (in_dim, out_dim) in enumerate(zip(dims[:-1], dims[1:])):
+        for i, (in_dim, out_dim) in enumerate(zip(dims[:-1], dims[1:], strict=False)):  # noqa: RUF007
             # residual (+attention) blocks
             for _ in range(num_res_blocks):
                 downsamples.append(ResidualBlock(in_dim, out_dim, dropout))
@@ -283,7 +283,7 @@ class Encoder3d(nn.Module):
             RMS_norm(out_dim, images=False), nn.SiLU(), CausalConv3d(out_dim, z_dim, 3, padding=1)
         )
 
-    def forward(self, x, feat_cache=None, feat_idx=[0]):
+    def forward(self, x, feat_cache=None, feat_idx=[0]):  # noqa: B006
         if feat_cache is not None:
             idx = feat_idx[0]
             cache_x = x[:, :, -CACHE_T:, :, :].clone()
@@ -333,10 +333,10 @@ class Decoder3d(nn.Module):
         self,
         dim=128,
         z_dim=4,
-        dim_mult=[1, 2, 4, 4],
+        dim_mult=[1, 2, 4, 4],  # noqa: B006
         num_res_blocks=2,
-        attn_scales=[],
-        temperal_upsample=[False, True, True],
+        attn_scales=[],  # noqa: B006
+        temperal_upsample=[False, True, True],  # noqa: B006
         dropout=0.0,
     ):
         super().__init__()
@@ -348,7 +348,7 @@ class Decoder3d(nn.Module):
         self.temperal_upsample = temperal_upsample
 
         # dimensions
-        dims = [dim * u for u in [dim_mult[-1]] + dim_mult[::-1]]
+        dims = [dim * u for u in [dim_mult[-1]] + dim_mult[::-1]]  # noqa: RUF005
         scale = 1.0 / 2 ** (len(dim_mult) - 2)
 
         # init block
@@ -361,7 +361,7 @@ class Decoder3d(nn.Module):
 
         # upsample blocks
         upsamples = []
-        for i, (in_dim, out_dim) in enumerate(zip(dims[:-1], dims[1:])):
+        for i, (in_dim, out_dim) in enumerate(zip(dims[:-1], dims[1:], strict=False)):  # noqa: RUF007
             # residual (+attention) blocks
             if i == 1 or i == 2 or i == 3:
                 in_dim = in_dim // 2
@@ -381,7 +381,7 @@ class Decoder3d(nn.Module):
         # output blocks
         self.head = nn.Sequential(RMS_norm(out_dim, images=False), nn.SiLU(), CausalConv3d(out_dim, 3, 3, padding=1))
 
-    def forward(self, x, feat_cache=None, feat_idx=[0]):
+    def forward(self, x, feat_cache=None, feat_idx=[0]):  # noqa: B006
         # conv1
         if feat_cache is not None:
             idx = feat_idx[0]
@@ -440,10 +440,10 @@ class VAE_(nn.Module):
         self,
         dim=128,
         z_dim=4,
-        dim_mult=[1, 2, 4, 4],
+        dim_mult=[1, 2, 4, 4],  # noqa: B006
         num_res_blocks=2,
-        attn_scales=[],
-        temperal_downsample=[True, True, False],
+        attn_scales=[],  # noqa: B006
+        temperal_downsample=[True, True, False],  # noqa: B006
         dropout=0.0,
         temporal_window=4,
     ):
@@ -588,8 +588,8 @@ def _video_vae(
             if load_mean_std:
                 img_mean_std = mean_std_path.replace("mean_std.pt", "images_mean_std.pt")
                 video_mean_std = mean_std_path.replace("mean_std.pt", "video_mean_std.pt")
-                img_mean, img_std = easy_io.load(img_mean_std, backend_key=backend_key, map_location=device)
-                video_mean, video_std = easy_io.load(video_mean_std, backend_key=backend_key, map_location=device)
+                img_mean, img_std = easy_io.load(img_mean_std, backend_key=backend_key, map_location=device)  # noqa: F821
+                video_mean, video_std = easy_io.load(video_mean_std, backend_key=backend_key, map_location=device)  # noqa: F821
                 img_mean = img_mean.reshape(1, 16, 1, 1, 1)
                 img_std = img_std.reshape(1, 16, 1, 1, 1)
                 video_mean = video_mean.reshape(1, 16, 32, 1, 1)
@@ -886,7 +886,7 @@ class CosmosImageTokenizer(torch.nn.Module, VideoTokenizerInterface):
     def get_pixel_num_frames(self, num_latent_frames: int) -> int:
         return 1
 
-    def compute_num_chunks(self, num_pixel_frames: int = None, num_latent_frames: int = None) -> int:
+    def compute_num_chunks(self, num_pixel_frames: int = None, num_latent_frames: int = None) -> int:  # noqa: RUF013
         """Compute the number of chunks given the number of pixel frames or latent frames.
         The number of chunks is computed based on the pixel_chunk_duration and num_overlap_pixels.
         It will raise an error if the number of frames is not divisible by the chunk size.

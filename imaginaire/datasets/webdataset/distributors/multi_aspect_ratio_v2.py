@@ -158,7 +158,7 @@ class ShardlistMultiAspectRatioInfinite(IterableDataset):
             log.info(f"Target ratio: {target_ratio}")
             log.info(f"Worker allocation: {aspect_worker_allocation}")
             log.info(f"Discrepancy: {aspect_worker_allocation / aspect_worker_allocation.sum() / target_ratio}")
-        return [(k, v) for k, v in zip(aspect_keys, aspect_worker_allocation.tolist())]
+        return [(k, v) for k, v in zip(aspect_keys, aspect_worker_allocation.tolist(), strict=False)]
 
     def _obtain_node_worker_url_mapping(
         self,
@@ -189,7 +189,7 @@ class ShardlistMultiAspectRatioInfinite(IterableDataset):
         global_worker_id = rank * num_workers + worker_id
 
         cumulative = 0
-        for aspect_key, worker_count in aspect_worker_allocation:
+        for aspect_key, worker_count in aspect_worker_allocation:  # noqa: B007
             cumulative += worker_count
             if global_worker_id < cumulative:
                 chunk_id = global_worker_id - cumulative + worker_count

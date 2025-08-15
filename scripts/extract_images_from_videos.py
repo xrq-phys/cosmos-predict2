@@ -47,7 +47,7 @@ def main(args) -> None:
     os.makedirs(output_images_dir, exist_ok=True)
 
     # Get the list of video files in the dataset directory
-    video_files = [filename for filename in os.listdir(videos_dir) if filename.endswith((".mp4"))]
+    video_files = [filename for filename in os.listdir(videos_dir) if filename.endswith(".mp4")]
 
     global_count = 0
     for video_file in video_files:

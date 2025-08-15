@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
 
 import numpy as np
 
@@ -25,10 +24,10 @@ class TeroPolyScheduler:
         self,
         total_Mimg: int,
         batch_size: int,
-        ref_Mimg: Optional[int] = None,
+        ref_Mimg: int | None = None,
         ref_batches: float = 70e3 / 1024,
-        max_lr_ratio: Optional[float] = 1.0,
-        min_lr_ratio: Optional[float] = None,
+        max_lr_ratio: float | None = 1.0,
+        min_lr_ratio: float | None = None,
         rampup_Mimg: float = 0,
         rampdown_Mimg: int = 0,
         verbosity_interval: int = 0,
@@ -122,7 +121,7 @@ class LambdaWarmUpCosineScheduler:
         self.f_min = f_min
         self.f_max = f_max
         self.cycle_lengths = cycle_lengths
-        self.cum_cycles = np.cumsum([0] + list(self.cycle_lengths))
+        self.cum_cycles = np.cumsum([0] + list(self.cycle_lengths))  # noqa: RUF005
         self.last_f = 0.0
         self.verbosity_interval = verbosity_interval
 

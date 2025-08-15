@@ -240,7 +240,7 @@ def generate_video(args: argparse.Namespace, pipe: Video2WorldPipeline) -> None:
     if args.batch_input_json is not None:
         # Process batch inputs from JSON file
         log.info(f"Loading batch inputs from JSON file: {args.batch_input_json}")
-        with open(args.batch_input_json, "r") as f:
+        with open(args.batch_input_json) as f:
             batch_inputs = json.load(f)
 
         for idx, item in enumerate(tqdm(batch_inputs)):

@@ -15,7 +15,7 @@
 
 import attrs
 
-from cosmos_predict2.conditioner import ReMapkey, TextAttr, TextConditioner, VideoConditioner
+from cosmos_predict2.conditioner import ReMapkey, TextAttr, TextConditioner
 from cosmos_predict2.configs.base.defaults.ema import EMAConfig
 from cosmos_predict2.models.text2image_dit import MiniTrainDIT
 from cosmos_predict2.tokenizers.tokenizer import CosmosImageTokenizer, TokenizerInterface

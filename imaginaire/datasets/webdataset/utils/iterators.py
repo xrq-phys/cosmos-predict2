@@ -16,7 +16,8 @@
 import io
 import os
 import sys
-from typing import IO, Any, BinaryIO, Callable, Dict, Iterable, Iterator, Optional, Tuple, Union
+from collections.abc import Callable, Iterable, Iterator
+from typing import IO, Any, BinaryIO
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -33,7 +34,7 @@ from imaginaire.datasets.webdataset.config.schema import TarSample
 from imaginaire.utils import log
 
 
-def gopen(url: Union[Tuple, str], mode: str = "rb", bufsize: int = 8192, **kw) -> Union[io.BytesIO, BinaryIO, IO]:
+def gopen(url: tuple | str, mode: str = "rb", bufsize: int = 8192, **kw) -> io.BytesIO | BinaryIO | IO:
     r"""Open the URL.
     This uses the `gopen_schemes` dispatch table to dispatch based
     on scheme.
@@ -106,7 +107,7 @@ def url_opener(data: Iterable, handler: Callable = reraise_exception, **kw) -> I
             yield sample
         except Exception as exn:
             log.info(f"Got an exception while opening urls - {exn}", rank0_only=False)
-            exn.args = exn.args + (url,)
+            exn.args = exn.args + (url,)  # noqa: RUF005
             if handler(exn):
                 continue
             else:
@@ -131,11 +132,11 @@ def process_sample(sample, url, key_idx):
 
 
 def tar_file_expander(
-    data: Iterable[Dict[str, Any]],
+    data: Iterable[dict[str, Any]],
     handler: Callable[[Exception], bool] = reraise_exception,
-    select_files: Optional[Callable[[str], bool]] = None,
-    rename_files: Optional[Callable[[str], str]] = None,
-) -> Iterator[Dict[str, Any]]:
+    select_files: Callable[[str], bool] | None = None,
+    rename_files: Callable[[str], str] | None = None,
+) -> Iterator[dict[str, Any]]:
     """Expand tar files.
 
     Args:
@@ -164,7 +165,7 @@ def tar_file_expander(
                 )
             if url.sample_keys_full_list is None:  # Original behavior
                 # tar_file_iterator_list is a list of iterator: [tar_file_iterator_0, tar_file_iterator_1, ... tar_file_iterator_N]
-                for sample in zip(*tar_file_iterator_list):
+                for sample in zip(*tar_file_iterator_list, strict=False):
                     # Merging data from all streams
                     # sample is list of dictionaries, each dictionary contains data and fname
                     # sample [tar_file_iterator_0[0], tar_file_iterator_1[0], ... tar_file_iterator_N[0]], length = num_of_data_key
@@ -173,21 +174,21 @@ def tar_file_expander(
                         yield sample_key
             else:
                 # Provide fallback to standard processing
-                for sample in zip(*tar_file_iterator_list):
+                for sample in zip(*tar_file_iterator_list, strict=False):
                     for key_idx, sample_key in enumerate(sample):
                         sample_key = process_sample(sample_key, url, key_idx)
                         yield sample_key
 
         except Exception as exn:
             log.info(f"Got an exception while expanding tars - {exn}", rank0_only=False)
-            exn.args = exn.args + (source.get("stream"), source.get("url"))
+            exn.args = exn.args + (source.get("stream"), source.get("url"))  # noqa: RUF005
             if handler(exn):
                 continue
             else:
                 break
 
 
-def correct_order(sample_list: list[Dict], expected_keys_order: list[str]) -> list[Dict]:
+def correct_order(sample_list: list[dict], expected_keys_order: list[str]) -> list[dict]:
     """Make sure the order of samples are the same as the url.keys order."""
     data_keys_per_sample = [sample["fname"].split(".")[1] for sample in sample_list]
     expected_keys_order = [key.replace("/", "_") for key in expected_keys_order]
@@ -195,7 +196,7 @@ def correct_order(sample_list: list[Dict], expected_keys_order: list[str]) -> li
         return sample_list
     # Order the sample_list based on the expected_keys_order
     sample_list_ordered = [None] * len(expected_keys_order)
-    for data_key, sample in zip(data_keys_per_sample, sample_list):
+    for data_key, sample in zip(data_keys_per_sample, sample_list, strict=False):
         idx = expected_keys_order.index(data_key)
         sample_list_ordered[idx] = sample
     return sample_list_ordered
@@ -211,7 +212,7 @@ def tarfile_samples(
     src: Iterable,
     handler: Callable = reraise_exception,
     streaming_download: bool = True,
-) -> Iterator[Dict]:
+) -> Iterator[dict]:
     r"""
     Given an iterator of filenames, this function opens the URL streams
     and groups data by keys.
@@ -242,9 +243,9 @@ class WebDataset(DataPipeline, FluidInterface):
         urls: list[TarSample],
         handler: Callable = reraise_exception,
         resampled: bool = False,
-        shardshuffle: Optional[bool] = None,
+        shardshuffle: bool | None = None,
         cache_size: int = -1,
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
         detshuffle: bool = False,
         nodesplitter: Callable = shardlists.single_node_only,
         verbose: bool = False,

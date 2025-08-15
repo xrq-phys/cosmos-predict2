@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple
 
 import torch
 
@@ -22,7 +21,7 @@ class EDMScaling:
     def __init__(self, sigma_data: float = 0.5):
         self.sigma_data = sigma_data
 
-    def __call__(self, sigma: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __call__(self, sigma: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         c_skip = self.sigma_data**2 / (sigma**2 + self.sigma_data**2)
         c_out = sigma * self.sigma_data / (sigma**2 + self.sigma_data**2) ** 0.5
         c_in = 1 / (sigma**2 + self.sigma_data**2) ** 0.5
@@ -46,7 +45,7 @@ class RectifiedFlowScaling:
             weights = shift * (self.num_steps / shift.sum())  # make sure the avg weights is 1.0
             self.weights = weights
 
-    def __call__(self, sigma: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __call__(self, sigma: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         t = sigma / (sigma + 1)
         c_skip = 1.0 - t
         c_out = -t

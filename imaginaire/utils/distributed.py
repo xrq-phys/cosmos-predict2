@@ -20,9 +20,10 @@ import collections.abc
 import ctypes
 import functools
 import os
+from collections.abc import Callable, Container
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, Callable, Container, Optional
+from typing import TYPE_CHECKING, Any
 
 import pynvml
 import torch
@@ -82,7 +83,7 @@ def init() -> int | None:
     log.info(f"Training with {get_world_size()} GPUs.")
 
 
-def get_rank(group: Optional[dist.ProcessGroup] = None) -> int:
+def get_rank(group: dist.ProcessGroup | None = None) -> int:
     """Get the rank (GPU device) of the worker.
 
     Returns:
@@ -94,7 +95,7 @@ def get_rank(group: Optional[dist.ProcessGroup] = None) -> int:
     return rank
 
 
-def get_world_size(group: Optional[dist.ProcessGroup] = None) -> int:
+def get_world_size(group: dist.ProcessGroup | None = None) -> int:
     """Get world size. How many GPUs are available in this job.
 
     Returns:
@@ -140,7 +141,7 @@ def rank0_only(func: Callable) -> Callable:
     """
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):  # noqa: ANN202
+    def wrapper(*args, **kwargs):
         if is_rank0():
             return func(*args, **kwargs)
         else:
@@ -159,7 +160,7 @@ def rank0_first(func: Callable) -> Callable:
     """run the function on rank 0 first, then on other ranks."""
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):  # noqa: ANN202
+    def wrapper(*args, **kwargs):
         if is_rank0():
             result = func(*args, **kwargs)
         barrier()
@@ -219,7 +220,7 @@ class DistributedDataParallel(torch.nn.parallel.DistributedDataParallel):
         # Cache the original model.forward() method.
         original_forward = self.module.forward
 
-        def wrapped_training_step(*_args, **_kwargs):  # noqa: ANN202
+        def wrapped_training_step(*_args, **_kwargs):
             # Unpatch immediately before calling training_step() because itself may want to call the real forward.
             self.module.forward = original_forward
             # The actual .training_step().
@@ -350,9 +351,9 @@ def dist_reduce_tensor(tensor, rank=0, reduce="mean"):
 
 def sync_model_states(
     model: torch.nn.Module,
-    process_group: Optional[dist.ProcessGroup] = None,
+    process_group: dist.ProcessGroup | None = None,
     src: int = 0,
-    params_and_buffers_to_ignore: Optional[Container[str]] = None,
+    params_and_buffers_to_ignore: Container[str] | None = None,
     broadcast_buffers: bool = True,
 ):
     """
@@ -436,7 +437,7 @@ def sync_model_states(
     _sync_module_states(
         module=model,
         process_group=process_group,
-        broadcast_bucket_size=int(250 * 1024 * 1024),
+        broadcast_bucket_size=(250 * 1024 * 1024),
         src=src,
         params_and_buffers_to_ignore=params_and_buffers_to_ignore,
         broadcast_buffers=broadcast_buffers,

@@ -79,8 +79,8 @@ def joint_image_video_dataloader(image_dataset_name: str, video_dataset_name: st
 class WebDataLoader(_DataLoader):
     def __init__(
         self,
-        image_dataset_name: str = None,
-        video_dataset_name: str = None,
+        image_dataset_name: str = None,  # noqa: RUF013
+        video_dataset_name: str = None,  # noqa: RUF013
         dataloader_type: str = "joint",
     ):
         assert dataloader_type == "video", "Currently supports video-only training."

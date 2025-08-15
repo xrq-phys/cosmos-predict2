@@ -16,7 +16,7 @@
 import argparse
 import json
 import os
-from typing import Iterable, Tuple, Union
+from collections.abc import Iterable
 
 import torch
 from PIL import Image
@@ -168,7 +168,7 @@ class VideoContentSafetyFilter(ContentSafetyGuardrail):
         log.debug(f"Frames data: {json.dumps(video_data, indent=4)}")
         return is_safe
 
-    def is_safe(self, input: Union[str, Iterable]) -> Tuple[bool, str]:
+    def is_safe(self, input: str | Iterable) -> tuple[bool, str]:
         if isinstance(input, str):
             is_safe = self.is_safe_file(input)
             return is_safe, "safe video detected" if is_safe else "unsafe video detected"

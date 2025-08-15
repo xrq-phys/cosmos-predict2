@@ -281,7 +281,7 @@ def process_single_generation(
             and getattr(pipe.config.prompt_refiner_config, "enabled", False)
         ):
             prompts_to_save["refined_prompt"] = []
-            for chunk_id, prompt_used in enumerate(prompts_used):
+            for chunk_id, prompt_used in enumerate(prompts_used):  # noqa: B007
                 prompts_to_save["refined_prompt"].append(prompt_used)
         save_text_prompts(prompts_to_save, output_prompt_path)
         log.success(f"Successfully saved prompt file to: {output_prompt_path}")
@@ -295,7 +295,7 @@ def generate_video(args: argparse.Namespace, pipe: Video2WorldPipeline) -> None:
     if args.batch_input_json is not None:
         # Process batch inputs from JSON file
         log.info(f"Loading batch inputs from JSON file: {args.batch_input_json}")
-        with open(args.batch_input_json, "r") as f:
+        with open(args.batch_input_json) as f:
             batch_inputs = json.load(f)
 
         for idx, item in enumerate(tqdm(batch_inputs)):

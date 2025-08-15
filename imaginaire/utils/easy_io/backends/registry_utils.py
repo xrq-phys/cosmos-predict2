@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import inspect
-from typing import Optional, Type, Union
 
 from imaginaire.utils.easy_io.backends.base_backend import BaseStorageBackend
 from imaginaire.utils.easy_io.backends.http_backend import HTTPBackend
@@ -26,9 +25,9 @@ prefix_to_backends: dict = {}
 
 def _register_backend(
     name: str,
-    backend: Type[BaseStorageBackend],
+    backend: type[BaseStorageBackend],
     force: bool = False,
-    prefixes: Union[str, list, tuple, None] = None,
+    prefixes: str | list | tuple | None = None,
 ):
     """Register a backend.
 
@@ -74,9 +73,9 @@ def _register_backend(
 
 def register_backend(
     name: str,
-    backend: Optional[Type[BaseStorageBackend]] = None,
+    backend: type[BaseStorageBackend] | None = None,
     force: bool = False,
-    prefixes: Union[str, list, tuple, None] = None,
+    prefixes: str | list | tuple | None = None,
 ):
     """Register a backend.
 

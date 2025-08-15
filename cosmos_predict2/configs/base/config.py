@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, List
+from typing import Any
 
 import attrs
 
@@ -35,7 +35,7 @@ from imaginaire.utils.config_helper import import_all_modules_from_package
 class Config(config.Config):
     # default config groups that will be used unless overwritten
     # see config groups in registry.py
-    defaults: List[Any] = attrs.field(
+    defaults: list[Any] = attrs.field(
         factory=lambda: [
             "_self_",
             {"dataloader_train": None},

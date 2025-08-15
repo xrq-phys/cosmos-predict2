@@ -14,7 +14,7 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-from typing import Any, List, Tuple, Union
+from typing import Any
 
 import numpy as np
 import torch
@@ -215,9 +215,7 @@ class Text2ImagePipeline(BasePipeline):
     def denoising_model(self) -> MiniTrainDIT:
         return self.dit
 
-    def encode_prompt(
-        self, prompts: Union[str, List[str]], max_length: int = 512, return_mask: bool = False
-    ) -> torch.Tensor:
+    def encode_prompt(self, prompts: str | list[str], max_length: int = 512, return_mask: bool = False) -> torch.Tensor:
         if isinstance(prompts, str):
             prompts = [prompts]
 
@@ -227,7 +225,7 @@ class Text2ImagePipeline(BasePipeline):
     def decode(self, latent: torch.Tensor) -> torch.Tensor:
         return self.tokenizer.decode(latent / self.sigma_data)
 
-    def _augment_image_dim_inplace(self, data_batch: dict, input_key: str = None) -> None:
+    def _augment_image_dim_inplace(self, data_batch: dict, input_key: str = None) -> None:  # noqa: RUF013
         input_key = "images"
         if input_key in data_batch:
             # Check if the data has already been augmented and avoid re-augmenting
@@ -256,7 +254,7 @@ class Text2ImagePipeline(BasePipeline):
         condition: torch.Tensor,
         epsilon_B_C_T_H_W: torch.Tensor,
         sigma_B_T: torch.Tensor,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Broadcast and split the input data and condition for model parallelism.
         Currently, we only support context parallelism, but it's disabled for text2image.
@@ -267,7 +265,7 @@ class Text2ImagePipeline(BasePipeline):
 
     def get_data_and_condition(
         self, data_batch: dict[str, torch.Tensor]
-    ) -> Tuple[torch.Tensor, torch.Tensor, TextCondition]:
+    ) -> tuple[torch.Tensor, torch.Tensor, TextCondition]:
         self._augment_image_dim_inplace(data_batch)
 
         # Latent state
@@ -385,7 +383,7 @@ class Text2ImagePipeline(BasePipeline):
 
         x_sigma_max = (
             misc.arch_invariant_rand(
-                (n_sample,) + tuple(state_shape),
+                (n_sample,) + tuple(state_shape),  # noqa: RUF005
                 torch.float32,
                 self.tensor_kwargs["device"],
                 seed,

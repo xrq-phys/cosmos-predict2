@@ -26,7 +26,7 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import is_dataclass
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any
 
 import attrs
 import yaml
@@ -50,7 +50,7 @@ from imaginaire.lazy_config.registry import _convert_target_to_string
 __all__ = ["LazyCall", "LazyConfig"]
 
 
-def sort_dict(d: Dict[str, Any]) -> OrderedDict[str, Any]:
+def sort_dict(d: dict[str, Any]) -> OrderedDict[str, Any]:
     return OrderedDict(sorted(d.items(), key=lambda x: x[0]))
 
 
@@ -58,7 +58,7 @@ def dict_representer(dumper: yaml.Dumper, data: OrderedDict[str, Any]) -> yaml.n
     return dumper.represent_mapping("tag:yaml.org,2002:map", data.items())
 
 
-def sort_recursive(obj: Union[Dict[str, Any], List[Any], Any]) -> Union[OrderedDict[str, Any], List[Any], Any]:
+def sort_recursive(obj: dict[str, Any] | list[Any] | Any) -> OrderedDict[str, Any] | list[Any] | Any:
     if isinstance(obj, dict):
         return sort_dict({k: sort_recursive(v) for k, v in obj.items()})
     elif isinstance(obj, list):
@@ -236,7 +236,7 @@ class LazyConfig:
     """
 
     @staticmethod
-    def load_rel(filename: str, keys: Union[None, str, Tuple[str, ...]] = None):
+    def load_rel(filename: str, keys: None | str | tuple[str, ...] = None):
         """
         Similar to :meth:`load()`, but load path relative to the caller's
         source file.
@@ -252,7 +252,7 @@ class LazyConfig:
         return LazyConfig.load(filename, keys)
 
     @staticmethod
-    def load(filename: str, keys: Union[None, str, Tuple[str, ...]] = None):
+    def load(filename: str, keys: None | str | tuple[str, ...] = None):
         """
         Load a config file.
 
@@ -423,7 +423,7 @@ class LazyConfig:
         # Serialize the DictConfig object by converting non-serializable objects to strings.
         config_omegaconf = serialize_config(config_omegaconf)
 
-        config_dict: Dict[str, Any] = OmegaConf.to_container(config_omegaconf, resolve=True)
+        config_dict: dict[str, Any] = OmegaConf.to_container(config_omegaconf, resolve=True)
         sorted_config: OrderedDict[str, Any] = sort_recursive(config_dict)
         with open(filename, "w") as f:
             yaml.dump(sorted_config, f, default_flow_style=False)

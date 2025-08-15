@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union
 
 import torch
 from PIL import Image
@@ -41,7 +40,7 @@ def obtain_image_size(data_dict: dict, input_keys: list) -> tuple[int, int]:
     return width, height
 
 
-def obtain_augmentation_size(data_dict: dict, augmentor_cfg: dict) -> Union[int, tuple]:
+def obtain_augmentation_size(data_dict: dict, augmentor_cfg: dict) -> int | tuple:
     r"""Function for obtaining size of the augmentation.
     When dealing with multi-aspect ratio dataloaders, we need to
     find the augmentation size from the aspect ratio of the data.

@@ -64,7 +64,7 @@ def get_video_dataset(
             "We can only use video_naive_bytes decoder with video_basic_augmentor_v2."
         )
 
-    dataset_info_fn = DATASET_OPTIONS[dataset_name]
+    dataset_info_fn = DATASET_OPTIONS[dataset_name]  # noqa: F821
     dataset_info = dataset_info_fn("", caption_type, embedding_type)
     augmentor = AUGMENTOR_OPTIONS[augmentor_name](
         resolution=resolution,
@@ -149,7 +149,7 @@ def get_image_dataset(
     # -- all - uses all dataset resolutions
     # -- gt720p - Uses only resolutions >= 720p
     # -- gt1080p - Uses only resolutions >= 1080p
-    dataset_info_fn = DATASET_OPTIONS[dataset_name]
+    dataset_info_fn = DATASET_OPTIONS[dataset_name]  # noqa: F821
     dataset_info = dataset_info_fn("", caption_type, embedding_type, dataset_resolution_type)
     augmentation = AUGMENTOR_OPTIONS[augmentor_name](
         resolution=resolution,

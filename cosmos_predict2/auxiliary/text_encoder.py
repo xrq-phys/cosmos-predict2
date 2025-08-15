@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Optional, Tuple, Union
 
 import torch
 import transformers
@@ -31,9 +30,9 @@ class CosmosT5TextEncoder(torch.nn.Module):
         self,
         model_name: str = "google-t5/t5-11b",  # not used by default to match open-source repo
         device: str = "cuda",
-        cache_dir: str = None,
+        cache_dir: str = None,  # noqa: RUF013
         local_files_only: bool = False,
-        torch_dtype: Optional[torch.dtype] = None,
+        torch_dtype: torch.dtype | None = None,
     ):
         """Initializes the T5 tokenizer and encoder.
 
@@ -74,8 +73,8 @@ class CosmosT5TextEncoder(torch.nn.Module):
 
     @torch.inference_mode()
     def encode_prompts(
-        self, prompts: Union[str, List[str]], max_length: int = 512, return_mask: bool = False
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+        self, prompts: str | list[str], max_length: int = 512, return_mask: bool = False
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Encodes text prompts into hidden state representations using a T5 encoder.
 
         This function tokenizes the input prompts, processes them through a T5 text encoder,

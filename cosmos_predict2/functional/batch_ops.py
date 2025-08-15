@@ -31,7 +31,7 @@ def common_broadcast(x: Tensor, y: Tensor) -> tuple[Tensor, Tensor]:
 
     common_ndims = min(ndims1, ndims2)
     for axis in range(common_ndims):
-        assert x.shape[axis] == y.shape[axis], "Dimensions not equal at axis {}".format(axis)
+        assert x.shape[axis] == y.shape[axis], f"Dimensions not equal at axis {axis}"
 
     if ndims1 < ndims2:
         x = x.reshape(x.shape + (1,) * (ndims2 - ndims1))

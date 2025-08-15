@@ -103,7 +103,7 @@ class FusedAdam(torch.optim.Optimizer):
         log.warning(f"FusedAdam master_weights: {master_weights} capturable: {capturable}")
         lr = torch.tensor(lr, dtype=torch.float32) if capturable else lr
         defaults = dict(lr=lr, bias_correction=bias_correction, betas=betas, eps=eps, weight_decay=weight_decay)
-        super(FusedAdam, self).__init__(params, defaults)
+        super(FusedAdam, self).__init__(params, defaults)  # noqa: UP008
         self.adam_w_mode = 1 if adam_w_mode else 0
 
         self.capturable = capturable
@@ -155,7 +155,7 @@ class FusedAdam(torch.optim.Optimizer):
         if self.param_groups_master is None:
             # Create full precision master weights
             self.param_groups_master = []
-            for i, pg in enumerate(self.param_groups):
+            for i, pg in enumerate(self.param_groups):  # noqa: B007
                 param_list = pg["params"]
                 self.param_groups_master.append(
                     {
@@ -167,11 +167,11 @@ class FusedAdam(torch.optim.Optimizer):
                     }
                 )
 
-        for group, group_master in zip(self.param_groups, self.param_groups_master):
+        for group, group_master in zip(self.param_groups, self.param_groups_master, strict=False):
             if len(group["params"]) == 0:
                 continue
             device = group["params"][0].device
-            bias_correction = 1 if "bias_correction" in group and group["bias_correction"] else 0
+            bias_correction = 1 if group.get("bias_correction") else 0
             beta1, beta2 = group["betas"]
 
             # assume same step across group now to simplify things
@@ -204,7 +204,7 @@ class FusedAdam(torch.optim.Optimizer):
             p_32_master = []
             bf16_master = []
 
-            for p, p_master in zip(group["params"], group_master["params"]):
+            for p, p_master in zip(group["params"], group_master["params"], strict=False):
                 if p.grad is None:
                     continue
                 if p.grad.data.is_sparse:

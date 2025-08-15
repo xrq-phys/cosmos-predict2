@@ -27,9 +27,9 @@ from megatron.core import parallel_state
 
 from cosmos_predict2.configs.base.config_text2image import (
     PREDICT2_TEXT2IMAGE_PIPELINE_0P6B,
+    PREDICT2_TEXT2IMAGE_PIPELINE_0P6B_FAST_TOKENIZER,
     PREDICT2_TEXT2IMAGE_PIPELINE_2B,
     PREDICT2_TEXT2IMAGE_PIPELINE_14B,
-    PREDICT2_TEXT2IMAGE_PIPELINE_0P6B_FAST_TOKENIZER
 )
 from cosmos_predict2.pipelines.text2image import Text2ImagePipeline
 from imaginaire.utils import distributed, log, misc
@@ -266,7 +266,7 @@ def generate_image(args: argparse.Namespace, pipe: Text2ImagePipeline) -> None:
     if args.batch_input_json is not None:
         # Process batch inputs from JSON file
         log.info(f"Loading batch inputs from JSON file: {args.batch_input_json}")
-        with open(args.batch_input_json, "r") as f:
+        with open(args.batch_input_json) as f:
             batch_inputs = json.load(f)
 
         for idx, item in enumerate(batch_inputs):

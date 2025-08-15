@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import math
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from collections.abc import Iterable
 
 import torch
 import torch.distributed as dist
@@ -33,12 +33,12 @@ from torch.nn.utils.clip_grad import (
 # https://github.com/pytorch/torchtitan/blob/d4c86e3758a84cf23e2e879ab3c995cba9d5e410/torchtitan/utils.py#L354
 @torch.no_grad()
 def clip_grad_norm_(
-    parameters: Union[torch.Tensor, Iterable[torch.Tensor]],
+    parameters: torch.Tensor | Iterable[torch.Tensor],
     max_norm: float,
     norm_type: float = 2.0,
     error_if_nonfinite: bool = False,
-    foreach: Optional[bool] = None,
-    pp_mesh: Optional[DeviceMesh] = None,
+    foreach: bool | None = None,
+    pp_mesh: DeviceMesh | None = None,
 ) -> torch.Tensor:
     """
     Clip the gradient norm of an iterable of parameters.
@@ -98,7 +98,7 @@ def _get_total_norm(
     tensors: _tensor_or_tensors,
     norm_type: float = 2.0,
     error_if_nonfinite: bool = False,
-    foreach: Optional[bool] = None,
+    foreach: bool | None = None,
 ) -> torch.Tensor:
     r"""Compute the norm of an iterable of tensors.
 
@@ -129,11 +129,11 @@ def _get_total_norm(
     if len(tensors) == 0:
         return torch.tensor(0.0)
     first_device = tensors[0].device
-    grouped_tensors: Dict[Tuple[torch.device, torch.dtype], Tuple[List[List[Tensor]], List[int]]] = (
+    grouped_tensors: dict[tuple[torch.device, torch.dtype], tuple[list[list[Tensor]], list[int]]] = (
         _group_tensors_by_device_and_dtype([tensors])
     )
 
-    norms: List[Tensor] = []
+    norms: list[Tensor] = []
     for (device, _), ([device_tensors], _) in grouped_tensors.items():
         if (foreach is None and _has_foreach_support(device_tensors, device)) or (
             foreach and _device_has_foreach_support(device)
@@ -165,7 +165,7 @@ def _clip_grads_with_norm_(
     parameters: _tensor_or_tensors,
     max_norm: float,
     total_norm: torch.Tensor,
-    foreach: Optional[bool] = None,
+    foreach: bool | None = None,
 ) -> None:
     r"""Scale the gradients of an iterable of parameters given a pre-calculated total norm and desired max norm.
 
@@ -198,7 +198,7 @@ def _clip_grads_with_norm_(
     max_norm = float(max_norm)
     if len(grads) == 0:
         return
-    grouped_grads: Dict[Tuple[torch.device, torch.dtype], Tuple[List[List[Tensor]], List[int]]] = (
+    grouped_grads: dict[tuple[torch.device, torch.dtype], tuple[list[list[Tensor]], list[int]]] = (
         _group_tensors_by_device_and_dtype([grads])
     )
 

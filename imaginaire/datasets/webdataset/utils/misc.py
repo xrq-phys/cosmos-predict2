@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import os
-from typing import Iterator
+from collections.abc import Iterator
 
 
 def repeat_list(x: list, n: int) -> list:

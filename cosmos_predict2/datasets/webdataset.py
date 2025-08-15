@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import omegaconf
 import webdataset as wds
@@ -32,7 +32,7 @@ class Dataset(BaseDataset):
         self,
         config: DatasetConfig,
         handler: Callable = reraise_exception,
-        decoder_handler: Optional[Callable] = None,
+        decoder_handler: Callable | None = None,
         detshuffle: bool = False,
     ):
         r"""Webdataloader class
@@ -105,7 +105,7 @@ class Dataset(BaseDataset):
         dataset.append(update_url)
 
         dataset.total_images = self.wdinfo.total_key_count  # type: ignore
-        log.info("Total number of training shards: %d" % num_tars)
-        log.info("Total training key count: %d" % dataset.total_images)  # type: ignore
+        log.info("Total number of training shards: %d" % num_tars)  # noqa: UP031
+        log.info("Total training key count: %d" % dataset.total_images)  # type: ignore  # noqa: UP031
 
         return dataset

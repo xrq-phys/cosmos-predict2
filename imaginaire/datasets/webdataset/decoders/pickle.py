@@ -15,10 +15,9 @@
 
 import pickle
 import re
-from typing import Optional
 
 
-def pkl_decoder(key: str, data: bytes) -> Optional[dict]:
+def pkl_decoder(key: str, data: bytes) -> dict | None:
     r"""
     Function to decode a pkl file.
     Args:

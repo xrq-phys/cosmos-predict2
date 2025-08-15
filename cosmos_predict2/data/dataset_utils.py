@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple
 
 import torch
 import torchvision.transforms.functional as F
@@ -23,7 +22,7 @@ _NUM_T5_TOKENS = 512  # Number of T5 tokens, to be imported by dataloaders
 
 
 class Resize_Preprocess:
-    def __init__(self, size: Tuple[int, int]):
+    def __init__(self, size: tuple[int, int]):
         """
         Initialize the preprocessing class with the target size.
         Args:
@@ -104,7 +103,7 @@ def to_tensor_image(image):
     """
     _is_tensor_image(image)
     if not image.dtype == torch.uint8:
-        raise TypeError("image tensor should have data type uint8. Got %s" % str(image.dtype))
+        raise TypeError("image tensor should have data type uint8. Got %s" % str(image.dtype))  # noqa: UP031
     return image.float() / 255.0
 
 
@@ -119,25 +118,25 @@ def to_tensor(clip):
     """
     _is_tensor_video_clip(clip)
     if not clip.dtype == torch.uint8:
-        raise TypeError("clip tensor should have data type uint8. Got %s" % str(clip.dtype))
+        raise TypeError("clip tensor should have data type uint8. Got %s" % str(clip.dtype))  # noqa: UP031
     return clip.float() / 255.0
 
 
 def _is_tensor_image(image: torch.Tensor) -> bool:
     if not torch.is_tensor(image):
-        raise TypeError("image should be Tensor. Got %s" % type(image))
+        raise TypeError("image should be Tensor. Got %s" % type(image))  # noqa: UP031
 
     if not image.ndimension() == 3:
-        raise ValueError("image should be 3D. Got %dD" % image.dim())
+        raise ValueError("image should be 3D. Got %dD" % image.dim())  # noqa: UP031
 
     return True
 
 
 def _is_tensor_video_clip(clip) -> bool:
     if not torch.is_tensor(clip):
-        raise TypeError("clip should be Tensor. Got %s" % type(clip))
+        raise TypeError("clip should be Tensor. Got %s" % type(clip))  # noqa: UP031
 
     if not clip.ndimension() == 4:
-        raise ValueError("clip should be 4D. Got %dD" % clip.dim())
+        raise ValueError("clip should be 4D. Got %dD" % clip.dim())  # noqa: UP031
 
     return True
