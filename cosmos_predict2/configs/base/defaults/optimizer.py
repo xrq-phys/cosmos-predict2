@@ -71,7 +71,7 @@ def get_base_optimizer_simple(
     return opt_cls(param_group, **kwargs)
 
 
-FusedAdamWConfig: LazyDict = L(get_base_optimizer)(
+FusedAdamWConfig: LazyDict[torch.optim.Optimizer] = L(get_base_optimizer)(
     model=PLACEHOLDER,
     lr=1e-4,
     weight_decay=0.1,

@@ -20,6 +20,7 @@ import pickle
 import numpy as np
 
 from cosmos_predict2.auxiliary.text_encoder import CosmosT5TextEncoder
+from imaginaire.constants import get_t5_model_dir
 
 """example command
 python -m scripts.get_t5_embeddings_from_cosmos_nemo_assets --dataset_path datasets/cosmos_nemo_assets
@@ -36,9 +37,7 @@ def parse_args() -> argparse.ArgumentParser:
     )
     parser.add_argument("--max_length", type=int, default=512, help="Maximum length of the text embedding")
     parser.add_argument("--prompt", type=str, default="A video of sks teal robot.", help="Text prompt for the dataset")
-    parser.add_argument(
-        "--cache_dir", type=str, default="checkpoints/google-t5/t5-11b", help="Directory to cache the T5 model"
-    )
+    parser.add_argument("--cache_dir", type=str, default=get_t5_model_dir(), help="Directory to cache the T5 model")
     parser.add_argument("--is_image", action="store_true", help="Set if the dataset is image-based")
     return parser.parse_args()
 

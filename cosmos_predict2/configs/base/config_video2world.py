@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import dataclasses
 from copy import deepcopy
 from enum import Enum
 
@@ -29,6 +30,14 @@ from cosmos_predict2.models.text2image_dit import SACConfig
 from cosmos_predict2.models.video2world_dit import MinimalV1LVGDiT
 from cosmos_predict2.tokenizers.tokenizer import TokenizerInterface
 from imaginaire.config import make_freezable
+from imaginaire.constants import (
+    CosmosPredict2Video2WorldFPS,
+    CosmosPredict2Video2WorldModelSize,
+    CosmosPredict2Video2WorldResolution,
+    get_checkpoints_dir,
+    get_cosmos_predict2_video2world_tokenizer,
+    get_cosmos_reason1_model_dir,
+)
 from imaginaire.lazy_config import LazyCall as L
 from imaginaire.lazy_config import LazyDict
 
@@ -53,13 +62,13 @@ class CosmosReason1Config:
 @attrs.define(slots=False)
 class Video2WorldPipelineConfig:
     adjust_video_noise: bool
-    conditioner: LazyDict
+    conditioner: LazyDict[VideoConditioner]
     conditioning_strategy: str
     min_num_conditional_frames: int
     max_num_conditional_frames: int
     sigma_conditional: float
-    net: LazyDict
-    tokenizer: LazyDict
+    net: LazyDict[MinimalV1LVGDiT]
+    tokenizer: LazyDict[TokenizerInterface]
     prompt_refiner_config: CosmosReason1Config
     guardrail_config: CosmosGuardrailConfig
     precision: str
@@ -78,7 +87,7 @@ class Video2WorldPipelineConfig:
 
 
 # Cosmos Predict2 Video2World 2B
-PREDICT2_VIDEO2WORLD_NET_2B = L(MinimalV1LVGDiT)(
+_PREDICT2_VIDEO2WORLD_NET_2B = L(MinimalV1LVGDiT)(
     max_img_h=240,
     max_img_w=240,
     max_frames=128,
@@ -109,7 +118,7 @@ PREDICT2_VIDEO2WORLD_NET_2B = L(MinimalV1LVGDiT)(
     ),
 )
 
-PREDICT2_VIDEO2WORLD_PIPELINE_2B = Video2WorldPipelineConfig(
+_PREDICT2_VIDEO2WORLD_PIPELINE_2B = Video2WorldPipelineConfig(
     adjust_video_noise=True,
     conditioner=L(VideoConditioner)(
         fps=L(ReMapkey)(
@@ -137,7 +146,7 @@ PREDICT2_VIDEO2WORLD_PIPELINE_2B = Video2WorldPipelineConfig(
     conditioning_strategy=str(ConditioningStrategy.FRAME_REPLACE),
     min_num_conditional_frames=1,
     max_num_conditional_frames=2,
-    net=PREDICT2_VIDEO2WORLD_NET_2B,
+    net=_PREDICT2_VIDEO2WORLD_NET_2B,
     precision="bfloat16",
     rectified_flow_t_scaling_factor=1.0,
     rectified_flow_loss_weight_uniform=True,
@@ -154,22 +163,22 @@ PREDICT2_VIDEO2WORLD_PIPELINE_2B = Video2WorldPipelineConfig(
         temporal_window=16,
         load_mean_std=False,
         name="tokenizer",
-        vae_pth="checkpoints/nvidia/Cosmos-Predict2-2B-Video2World/tokenizer/tokenizer.pth",
+        vae_pth=get_cosmos_predict2_video2world_tokenizer(model_size="2B"),
     ),
     prompt_refiner_config=CosmosReason1Config(
-        checkpoint_dir="checkpoints/nvidia/Cosmos-Reason1-7B",
+        checkpoint_dir=get_cosmos_reason1_model_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
     guardrail_config=CosmosGuardrailConfig(
-        checkpoint_dir="checkpoints/",
+        checkpoint_dir=get_checkpoints_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
 )
 
 # Cosmos Predict2 Video2World 14B
-PREDICT2_VIDEO2WORLD_NET_14B = L(MinimalV1LVGDiT)(
+_PREDICT2_VIDEO2WORLD_NET_14B = L(MinimalV1LVGDiT)(
     max_img_h=240,
     max_img_w=240,
     max_frames=128,
@@ -200,7 +209,7 @@ PREDICT2_VIDEO2WORLD_NET_14B = L(MinimalV1LVGDiT)(
     ),
 )
 
-PREDICT2_VIDEO2WORLD_PIPELINE_14B = Video2WorldPipelineConfig(
+_PREDICT2_VIDEO2WORLD_PIPELINE_14B = Video2WorldPipelineConfig(
     adjust_video_noise=True,
     conditioner=L(VideoConditioner)(
         fps=L(ReMapkey)(
@@ -228,7 +237,7 @@ PREDICT2_VIDEO2WORLD_PIPELINE_14B = Video2WorldPipelineConfig(
     conditioning_strategy=str(ConditioningStrategy.FRAME_REPLACE),
     min_num_conditional_frames=1,
     max_num_conditional_frames=2,
-    net=PREDICT2_VIDEO2WORLD_NET_14B,
+    net=_PREDICT2_VIDEO2WORLD_NET_14B,
     precision="bfloat16",
     rectified_flow_t_scaling_factor=1.0,
     rectified_flow_loss_weight_uniform=True,
@@ -245,15 +254,15 @@ PREDICT2_VIDEO2WORLD_PIPELINE_14B = Video2WorldPipelineConfig(
         temporal_window=16,
         load_mean_std=False,
         name="tokenizer",
-        vae_pth="checkpoints/nvidia/Cosmos-Predict2-14B-Video2World/tokenizer/tokenizer.pth",
+        vae_pth=get_cosmos_predict2_video2world_tokenizer(model_size="14B"),
     ),
     prompt_refiner_config=CosmosReason1Config(
-        checkpoint_dir="checkpoints/nvidia/Cosmos-Reason1-7B",
+        checkpoint_dir=get_cosmos_reason1_model_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
     guardrail_config=CosmosGuardrailConfig(
-        checkpoint_dir="checkpoints/",
+        checkpoint_dir=get_checkpoints_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
@@ -261,40 +270,40 @@ PREDICT2_VIDEO2WORLD_PIPELINE_14B = Video2WorldPipelineConfig(
 
 # Cosmos Predict2 Video2World 2B pipeline config variants - resolution ["480", "720"] and fps [10, 16]
 # 2B, resolution 480p, fps 10
-PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_10FPS = deepcopy(PREDICT2_VIDEO2WORLD_PIPELINE_2B)
-PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_10FPS.resolution = "480"
-PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_10FPS.state_t = 16
+_PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_10FPS = deepcopy(_PREDICT2_VIDEO2WORLD_PIPELINE_2B)
+_PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_10FPS.resolution = "480"
+_PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_10FPS.state_t = 16
 # 2B, resolution 480p, fps 16
-PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_16FPS = deepcopy(PREDICT2_VIDEO2WORLD_PIPELINE_2B)
-PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_16FPS.resolution = "480"
+_PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_16FPS = deepcopy(_PREDICT2_VIDEO2WORLD_PIPELINE_2B)
+_PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_16FPS.resolution = "480"
 # 2B, resolution 720p, fps 10
-PREDICT2_VIDEO2WORLD_PIPELINE_2B_720P_10FPS = deepcopy(PREDICT2_VIDEO2WORLD_PIPELINE_2B)
-PREDICT2_VIDEO2WORLD_PIPELINE_2B_720P_10FPS.state_t = 16
+_PREDICT2_VIDEO2WORLD_PIPELINE_2B_720P_10FPS = deepcopy(_PREDICT2_VIDEO2WORLD_PIPELINE_2B)
+_PREDICT2_VIDEO2WORLD_PIPELINE_2B_720P_10FPS.state_t = 16
 # 2B, resolution 720p, fps 16
-PREDICT2_VIDEO2WORLD_PIPELINE_2B_720P_16FPS = PREDICT2_VIDEO2WORLD_PIPELINE_2B
+_PREDICT2_VIDEO2WORLD_PIPELINE_2B_720P_16FPS = deepcopy(_PREDICT2_VIDEO2WORLD_PIPELINE_2B)
 
 # Cosmos Predict2 Video2World 14B pipeline config variants - resolution ["480", "720"] and fps [10, 16}]
 # 14B, resolution 480p, fps 10
-PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_10FPS = deepcopy(PREDICT2_VIDEO2WORLD_PIPELINE_14B)
-PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_10FPS.resolution = "480"
-PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_10FPS.state_t = 16
+_PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_10FPS = deepcopy(_PREDICT2_VIDEO2WORLD_PIPELINE_14B)
+_PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_10FPS.resolution = "480"
+_PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_10FPS.state_t = 16
 # 14B, resolution 480p, fps 16
-PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_16FPS = deepcopy(PREDICT2_VIDEO2WORLD_PIPELINE_14B)
-PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_16FPS.resolution = "480"
+_PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_16FPS = deepcopy(_PREDICT2_VIDEO2WORLD_PIPELINE_14B)
+_PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_16FPS.resolution = "480"
 # 14B, resolution 720p, fps 10
-PREDICT2_VIDEO2WORLD_PIPELINE_14B_720P_10FPS = deepcopy(PREDICT2_VIDEO2WORLD_PIPELINE_14B)
-PREDICT2_VIDEO2WORLD_PIPELINE_14B_720P_10FPS.state_t = 16
+_PREDICT2_VIDEO2WORLD_PIPELINE_14B_720P_10FPS = deepcopy(_PREDICT2_VIDEO2WORLD_PIPELINE_14B)
+_PREDICT2_VIDEO2WORLD_PIPELINE_14B_720P_10FPS.state_t = 16
 # 14B, resolution 720p, fps 16
-PREDICT2_VIDEO2WORLD_PIPELINE_14B_720P_16FPS = PREDICT2_VIDEO2WORLD_PIPELINE_14B
+_PREDICT2_VIDEO2WORLD_PIPELINE_14B_720P_16FPS = deepcopy(_PREDICT2_VIDEO2WORLD_PIPELINE_14B)
 
 
 # Predict2 + NATTEN
 
 # Cosmos Predict2 Video2World + NATTEN 2B
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_2B = deepcopy(PREDICT2_VIDEO2WORLD_NET_2B)
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_2B.natten_parameters = PREDICT2_VIDEO2WORLD_NET_2B_NATTEN_PARAMETERS
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B = deepcopy(_PREDICT2_VIDEO2WORLD_PIPELINE_2B)
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B.net.natten_parameters = PREDICT2_VIDEO2WORLD_NET_2B_NATTEN_PARAMETERS
 
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B = Video2WorldPipelineConfig(
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B = Video2WorldPipelineConfig(
     adjust_video_noise=True,
     conditioner=L(VideoConditioner)(
         fps=L(ReMapkey)(
@@ -322,7 +331,7 @@ PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B = Video2WorldPipelineConfig(
     conditioning_strategy=str(ConditioningStrategy.FRAME_REPLACE),
     min_num_conditional_frames=1,
     max_num_conditional_frames=2,
-    net=PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_2B,
+    net=_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B,
     precision="bfloat16",
     rectified_flow_t_scaling_factor=1.0,
     rectified_flow_loss_weight_uniform=True,
@@ -339,25 +348,25 @@ PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B = Video2WorldPipelineConfig(
         temporal_window=16,
         load_mean_std=False,
         name="tokenizer",
-        vae_pth="checkpoints/nvidia/Cosmos-Predict2-2B-Video2World/tokenizer/tokenizer.pth",
+        vae_pth=get_cosmos_predict2_video2world_tokenizer(model_size="2B"),
     ),
     prompt_refiner_config=CosmosReason1Config(
-        checkpoint_dir="checkpoints/nvidia/Cosmos-Reason1-7B",
+        checkpoint_dir=get_cosmos_reason1_model_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
     guardrail_config=CosmosGuardrailConfig(
-        checkpoint_dir="checkpoints/",
+        checkpoint_dir=get_checkpoints_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
 )
 
 # Cosmos Predict2 Video2World + NATTEN 14B
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B = deepcopy(PREDICT2_VIDEO2WORLD_NET_14B)
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B.natten_parameters = PREDICT2_VIDEO2WORLD_NET_14B_NATTEN_PARAMETERS
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B = deepcopy(_PREDICT2_VIDEO2WORLD_NET_14B)
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B.natten_parameters = PREDICT2_VIDEO2WORLD_NET_14B_NATTEN_PARAMETERS
 
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B = Video2WorldPipelineConfig(
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B = Video2WorldPipelineConfig(
     adjust_video_noise=True,
     conditioner=L(VideoConditioner)(
         fps=L(ReMapkey)(
@@ -385,7 +394,7 @@ PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B = Video2WorldPipelineConfig(
     conditioning_strategy=str(ConditioningStrategy.FRAME_REPLACE),
     min_num_conditional_frames=1,
     max_num_conditional_frames=2,
-    net=PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B,
+    net=_PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B,
     precision="bfloat16",
     rectified_flow_t_scaling_factor=1.0,
     rectified_flow_loss_weight_uniform=True,
@@ -402,15 +411,15 @@ PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B = Video2WorldPipelineConfig(
         temporal_window=16,
         load_mean_std=False,
         name="tokenizer",
-        vae_pth="checkpoints/nvidia/Cosmos-Predict2-14B-Video2World/tokenizer/tokenizer.pth",
+        vae_pth=get_cosmos_predict2_video2world_tokenizer(model_size="14B"),
     ),
     prompt_refiner_config=CosmosReason1Config(
-        checkpoint_dir="checkpoints/nvidia/Cosmos-Reason1-7B",
+        checkpoint_dir=get_cosmos_reason1_model_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
     guardrail_config=CosmosGuardrailConfig(
-        checkpoint_dir="checkpoints/",
+        checkpoint_dir=get_checkpoints_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
@@ -419,15 +428,57 @@ PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B = Video2WorldPipelineConfig(
 
 # Cosmos Predict2 Video2World + NATTEN pipeline config variants
 # 2B, 720p, 10 fps
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_2B_720P_10FPS = deepcopy(PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_2B)
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_2B_720P_10FPS.state_t = 16
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B_720P_10FPS = deepcopy(_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B)
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B_720P_10FPS.state_t = 16
 
 # 2B, 720p, 16 fps
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_2B_720P_16FPS = PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_2B
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B_720P_16FPS = deepcopy(_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B)
 
 # 14B, 720p, 10 fps
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B_720P_10FPS = deepcopy(PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B)
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B_720P_10FPS.state_t = 16
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B_720P_10FPS = deepcopy(_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B)
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B_720P_10FPS.state_t = 16
 
 # 14B, 720p, 16 fps
-PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B_720P_16FPS = PREDICT2_VIDEO2WORLD_WITH_NATTEN_NET_14B
+_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B_720P_16FPS = deepcopy(_PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B)
+
+
+@dataclasses.dataclass(frozen=True)
+class _Video2WorldPipelineConfig:
+    model_size: CosmosPredict2Video2WorldModelSize
+    resolution: CosmosPredict2Video2WorldResolution
+    fps: CosmosPredict2Video2WorldFPS
+    natten: bool = dataclasses.field(default=False, kw_only=True)
+
+
+_PREDICT2_VIDEO2WORLD_PIPELINES: dict[
+    _Video2WorldPipelineConfig,
+    Video2WorldPipelineConfig,
+] = {
+    _Video2WorldPipelineConfig("2B", "480", 10): _PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_10FPS,
+    _Video2WorldPipelineConfig("2B", "480", 16): _PREDICT2_VIDEO2WORLD_PIPELINE_2B_480P_16FPS,
+    _Video2WorldPipelineConfig("2B", "720", 10): _PREDICT2_VIDEO2WORLD_PIPELINE_2B_720P_10FPS,
+    _Video2WorldPipelineConfig("2B", "720", 16): _PREDICT2_VIDEO2WORLD_PIPELINE_2B_720P_16FPS,
+    _Video2WorldPipelineConfig("14B", "480", 10): _PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_10FPS,
+    _Video2WorldPipelineConfig("14B", "480", 16): _PREDICT2_VIDEO2WORLD_PIPELINE_14B_480P_16FPS,
+    _Video2WorldPipelineConfig("14B", "720", 10): _PREDICT2_VIDEO2WORLD_PIPELINE_14B_720P_10FPS,
+    _Video2WorldPipelineConfig("14B", "720", 16): _PREDICT2_VIDEO2WORLD_PIPELINE_14B_720P_16FPS,
+    _Video2WorldPipelineConfig("2B", "720", 10, natten=True): _PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B_720P_10FPS,
+    _Video2WorldPipelineConfig("2B", "720", 16, natten=True): _PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B_720P_16FPS,
+    _Video2WorldPipelineConfig(
+        "14B", "720", 10, natten=True
+    ): _PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B_720P_10FPS,
+    _Video2WorldPipelineConfig(
+        "14B", "720", 16, natten=True
+    ): _PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B_720P_16FPS,
+}
+
+
+def get_cosmos_predict2_video2world_pipeline(
+    *,
+    model_size: CosmosPredict2Video2WorldModelSize,
+    resolution: CosmosPredict2Video2WorldResolution = "720",
+    fps: CosmosPredict2Video2WorldFPS = 16,
+    natten: bool = False,
+) -> Video2WorldPipelineConfig:
+    key = _Video2WorldPipelineConfig(model_size, resolution, fps, natten=natten)
+    return _PREDICT2_VIDEO2WORLD_PIPELINES[key]

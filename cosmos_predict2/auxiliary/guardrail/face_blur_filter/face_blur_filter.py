@@ -33,6 +33,7 @@ from cosmos_predict2.auxiliary.guardrail.face_blur_filter.retinaface_utils impor
     filter_detected_boxes,
     load_model,
 )
+from imaginaire.constants import get_cosmos_guardrail1_model_dir
 from imaginaire.utils import log, misc
 
 # RetinaFace model constants from https://github.com/biubug6/Pytorch_Retinaface/blob/master/detect.py
@@ -218,7 +219,7 @@ def main(args):
         return
 
     face_blur = RetinaFaceFilter(
-        checkpoint_dir="checkpoints/nvidia/Cosmos-Guardrail1/face_blur_filter/Resnet50_Final.pth"
+        checkpoint_dir=f"{get_cosmos_guardrail1_model_dir()}/face_blur_filter/Resnet50_Final.pth"
     )
     postprocessing_runner = GuardrailRunner(postprocessors=[face_blur])
     os.makedirs(args.output_dir, exist_ok=True)

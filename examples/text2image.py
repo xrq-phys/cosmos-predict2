@@ -26,12 +26,15 @@ import torch
 from megatron.core import parallel_state
 
 from cosmos_predict2.configs.base.config_text2image import (
-    PREDICT2_TEXT2IMAGE_PIPELINE_0P6B,
-    PREDICT2_TEXT2IMAGE_PIPELINE_0P6B_FAST_TOKENIZER,
-    PREDICT2_TEXT2IMAGE_PIPELINE_2B,
-    PREDICT2_TEXT2IMAGE_PIPELINE_14B,
+    get_cosmos_predict2_text2image_pipeline,
 )
 from cosmos_predict2.pipelines.text2image import Text2ImagePipeline
+from imaginaire.constants import (
+    CosmosPredict2Text2ImageModelSize,
+    CosmosPredict2Video2WorldAspectRatio,
+    get_cosmos_predict2_text2image_checkpoint,
+    get_t5_model_dir,
+)
 from imaginaire.utils import distributed, log, misc
 from imaginaire.utils.io import save_image_or_video, save_text_prompts
 
@@ -42,7 +45,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Text to Image Generation with Cosmos Predict2")
     parser.add_argument(
         "--model_size",
-        choices=["0.6B", "2B", "14B"],
+        choices=CosmosPredict2Text2ImageModelSize.__args__,
         default="2B",
         help="Size of the model to use for text-to-image generation",
     )
@@ -67,7 +70,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--negative_prompt", type=str, default="", help="Negative text prompt for image generation")
     parser.add_argument(
         "--aspect_ratio",
-        choices=["1:1", "4:3", "3:4", "16:9", "9:16"],
+        choices=CosmosPredict2Video2WorldAspectRatio.__args__,
         default="16:9",
         type=str,
         help="Aspect ratio of the generated output (width:height)",
@@ -96,32 +99,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def setup_pipeline(args: argparse.Namespace, text_encoder=None) -> Text2ImagePipeline:
-    log.info(f"Using model size: {args.model_size}")
-
-    if args.use_fast_tokenizer:
-        assert args.model_size == "0.6B", "Fast tokenizer is only supported for 0.6B model"
-
-    if args.model_size == "0.6B":
-        if args.use_fast_tokenizer:
-            config = PREDICT2_TEXT2IMAGE_PIPELINE_0P6B_FAST_TOKENIZER
-            dit_path = "checkpoints/nvidia/Cosmos-Predict2-0.6B-Text2Image/model_fast_tokenizer.pt"
-        else:
-            config = PREDICT2_TEXT2IMAGE_PIPELINE_0P6B
-            dit_path = "checkpoints/nvidia/Cosmos-Predict2-0.6B-Text2Image/model.pt"
-    elif args.model_size == "2B":
-        config = PREDICT2_TEXT2IMAGE_PIPELINE_2B
-        dit_path = "checkpoints/nvidia/Cosmos-Predict2-2B-Text2Image/model.pt"
-    elif args.model_size == "14B":
-        config = PREDICT2_TEXT2IMAGE_PIPELINE_14B
-        dit_path = "checkpoints/nvidia/Cosmos-Predict2-14B-Text2Image/model.pt"
-    else:
-        raise ValueError("Invalid model size. Choose either '0.6B', '2B' or '14B'.")
+    config = get_cosmos_predict2_text2image_pipeline(model_size=args.model_size, fast_tokenizer=args.use_fast_tokenizer)
     if hasattr(args, "dit_path") and args.dit_path:
         dit_path = args.dit_path
-
+    else:
+        dit_path = get_cosmos_predict2_text2image_checkpoint(model_size=args.model_size)
     log.info(f"Using dit_path: {dit_path}")
     # Only set up text encoder path if no encoder is provided
-    text_encoder_path = None if text_encoder is not None else "checkpoints/google-t5/t5-11b"
+    text_encoder_path = None if text_encoder is not None else get_t5_model_dir()
     if text_encoder is not None:
         log.info("Using provided text encoder")
     else:

@@ -17,6 +17,14 @@ import argparse
 import json
 import os
 
+from imaginaire.constants import (
+    CosmosPredict2MultiviewFPS,
+    CosmosPredict2MultiviewModelSize,
+    CosmosPredict2MultiviewResolution,
+    get_cosmos_predict2_multiview_checkpoint,
+    get_t5_model_dir,
+)
+
 # Set TOKENIZERS_PARALLELISM environment variable to avoid deadlocks with multiprocessing
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -26,7 +34,7 @@ import torch
 from megatron.core import parallel_state
 
 from cosmos_predict2.configs.base.config_multiview import (
-    PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES,
+    get_cosmos_predict2_multiview_pipeline,
 )
 from cosmos_predict2.pipelines.multiview import MultiviewPipeline
 from examples.video2world import cleanup_distributed, process_single_generation
@@ -60,16 +68,21 @@ def validate_input_file(input_path: str, num_conditional_frames: int) -> bool:
 
 
 def setup_pipeline(args: argparse.Namespace, text_encoder=None):
-    log.info(f"Using model size: {args.model_size}")
-    config = PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES
-    dit_path = "checkpoints/nvidia/Cosmos-Predict2-2B-Multiview/model-720p-10fps-7views-29frames.pt"
+    views = 7
+    frames = 29
+    config = get_cosmos_predict2_multiview_pipeline(
+        model_size=args.model_size, resolution=args.resolution, fps=args.fps, views=views, frames=frames
+    )
     if hasattr(args, "dit_path") and args.dit_path:
         dit_path = args.dit_path
-
+    else:
+        dit_path = get_cosmos_predict2_multiview_checkpoint(
+            model_size=args.model_size, resolution=args.resolution, fps=args.fps, views=views, frames=frames
+        )
     log.info(f"Using dit_path: {dit_path}")
 
     # Only set up text encoder path if no encoder is provided
-    text_encoder_path = None if text_encoder is not None else "checkpoints/google-t5/t5-11b"
+    text_encoder_path = None if text_encoder is not None else get_t5_model_dir()
     if text_encoder is not None:
         log.info("Using provided text encoder")
     else:
@@ -268,20 +281,20 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Video-to-World Generation with Cosmos Predict2")
     parser.add_argument(
         "--model_size",
-        choices=["2B"],
+        choices=CosmosPredict2MultiviewModelSize.__args__,
         default="2B",
         help="Size of the model to use for video-to-world generation",
     )
     parser.add_argument(
         "--resolution",
-        choices=["720"],
+        choices=CosmosPredict2MultiviewResolution.__args__,
         default="720",
         type=str,
         help="Resolution of the model to use for video-to-world generation",
     )
     parser.add_argument(
         "--fps",
-        choices=[10],
+        choices=CosmosPredict2MultiviewFPS.__args__,
         default=10,
         type=int,
         help="FPS of the model to use for video-to-world generation",

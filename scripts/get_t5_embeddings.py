@@ -20,6 +20,7 @@ import pickle
 import numpy as np
 
 from cosmos_predict2.auxiliary.text_encoder import CosmosT5TextEncoder
+from imaginaire.constants import get_t5_model_dir
 
 """example command
 python -m scripts.get_t5_embeddings --dataset_path datasets/hdvila
@@ -30,9 +31,7 @@ def parse_args() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Compute T5 embeddings for text prompts")
     parser.add_argument("--dataset_path", type=str, default="datasets/hdvila", help="Root path to the dataset")
     parser.add_argument("--max_length", type=int, default=512, help="Maximum length of the text embedding")
-    parser.add_argument(
-        "--cache_dir", type=str, default="checkpoints/google-t5/t5-11b", help="Directory to cache the T5 model"
-    )
+    parser.add_argument("--cache_dir", type=str, default=get_t5_model_dir(), help="Directory to cache the T5 model")
     return parser.parse_args()
 
 

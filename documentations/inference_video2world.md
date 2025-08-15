@@ -188,7 +188,7 @@ python -m examples.video2world \
 This configuration can be seen in the model's configuration:
 ```python
 prompt_refiner_config=CosmosReason1Config(
-    checkpoint_dir="checkpoints/nvidia/Cosmos-Reason1-7B",
+    checkpoint_dir=get_cosmos_reason1_model_dir(),
     offload_model_to_cpu=True,
     enabled=True,  # Controls whether the refiner is used
 )

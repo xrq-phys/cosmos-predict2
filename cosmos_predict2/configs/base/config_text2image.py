@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import dataclasses
+
 import attrs
 
 from cosmos_predict2.conditioner import ReMapkey, TextAttr, TextConditioner
@@ -20,6 +22,11 @@ from cosmos_predict2.configs.base.defaults.ema import EMAConfig
 from cosmos_predict2.models.text2image_dit import MiniTrainDIT
 from cosmos_predict2.tokenizers.tokenizer import CosmosImageTokenizer, TokenizerInterface
 from imaginaire.config import make_freezable
+from imaginaire.constants import (
+    CosmosPredict2Video2WorldModelSize,
+    get_checkpoints_dir,
+    get_cosmos_predict2_text2image_tokenizer,
+)
 from imaginaire.lazy_config import LazyCall as L
 from imaginaire.lazy_config import LazyDict
 
@@ -46,9 +53,9 @@ class CosmosGuardrailConfig:
 @attrs.define(slots=False)
 class Text2ImagePipelineConfig:
     adjust_video_noise: bool
-    conditioner: LazyDict
-    net: LazyDict
-    tokenizer: LazyDict
+    conditioner: LazyDict[TextConditioner]
+    net: LazyDict[MiniTrainDIT]
+    tokenizer: LazyDict[TokenizerInterface]
     guardrail_config: CosmosGuardrailConfig
     precision: str
     rectified_flow_t_scaling_factor: float
@@ -66,7 +73,7 @@ class Text2ImagePipelineConfig:
 
 
 # Cosmos Predict2 Text2Image 0.6B
-PREDICT2_TEXT2IMAGE_NET_0P6B = L(MiniTrainDIT)(
+_PREDICT2_TEXT2IMAGE_NET_0P6B = L(MiniTrainDIT)(
     max_img_h=240,
     max_img_w=240,
     max_frames=128,
@@ -100,7 +107,7 @@ PREDICT2_TEXT2IMAGE_NET_0P6B = L(MiniTrainDIT)(
     rope_enable_fps_modulation=False,
 )
 
-PREDICT2_TEXT2IMAGE_PIPELINE_0P6B = Text2ImagePipelineConfig(
+_PREDICT2_TEXT2IMAGE_PIPELINE_0P6B = Text2ImagePipelineConfig(
     adjust_video_noise=True,
     conditioner=L(TextConditioner)(
         fps=L(ReMapkey)(
@@ -120,7 +127,7 @@ PREDICT2_TEXT2IMAGE_PIPELINE_0P6B = Text2ImagePipelineConfig(
             input_key=["t5_text_embeddings"],
         ),
     ),
-    net=PREDICT2_TEXT2IMAGE_NET_0P6B,
+    net=_PREDICT2_TEXT2IMAGE_NET_0P6B,
     precision="bfloat16",
     rectified_flow_t_scaling_factor=1.0,
     rectified_flow_loss_weight_uniform=True,
@@ -135,7 +142,7 @@ PREDICT2_TEXT2IMAGE_PIPELINE_0P6B = Text2ImagePipelineConfig(
         chunk_duration=81,
         load_mean_std=False,
         name="tokenizer",
-        vae_pth="checkpoints/nvidia/Cosmos-Predict2-0.6B-Text2Image/tokenizer/tokenizer.pth",
+        vae_pth=get_cosmos_predict2_text2image_tokenizer(model_size="0.6B"),
     ),
     guardrail_config=CosmosGuardrailConfig(
         checkpoint_dir="checkpoints/",
@@ -145,7 +152,7 @@ PREDICT2_TEXT2IMAGE_PIPELINE_0P6B = Text2ImagePipelineConfig(
 )
 
 # Config for using fast tokenizer
-PREDICT2_TEXT2IMAGE_PIPELINE_0P6B_FAST_TOKENIZER = Text2ImagePipelineConfig(
+_PREDICT2_TEXT2IMAGE_PIPELINE_0P6B_FAST_TOKENIZER = Text2ImagePipelineConfig(
     adjust_video_noise=True,
     conditioner=L(TextConditioner)(
         fps=L(ReMapkey)(
@@ -165,7 +172,7 @@ PREDICT2_TEXT2IMAGE_PIPELINE_0P6B_FAST_TOKENIZER = Text2ImagePipelineConfig(
             input_key=["t5_text_embeddings"],
         ),
     ),
-    net=PREDICT2_TEXT2IMAGE_NET_0P6B,
+    net=_PREDICT2_TEXT2IMAGE_NET_0P6B,
     precision="bfloat16",
     rectified_flow_t_scaling_factor=1.0,
     rectified_flow_loss_weight_uniform=True,
@@ -178,17 +185,17 @@ PREDICT2_TEXT2IMAGE_PIPELINE_0P6B_FAST_TOKENIZER = Text2ImagePipelineConfig(
     text_encoder_class="T5",
     tokenizer=L(CosmosImageTokenizer)(
         name="tokenizer",
-        vae_pth="checkpoints/nvidia/Cosmos-Predict2-0.6B-Text2Image/tokenizer_fast/tokenizer.pth",
+        vae_pth=get_cosmos_predict2_text2image_tokenizer(model_size="0.6B"),
     ),
     guardrail_config=CosmosGuardrailConfig(
-        checkpoint_dir="checkpoints/",
+        checkpoint_dir=get_checkpoints_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
 )
 
 # Cosmos Predict2 Text2Image 2B
-PREDICT2_TEXT2IMAGE_NET_2B = L(MiniTrainDIT)(
+_PREDICT2_TEXT2IMAGE_NET_2B = L(MiniTrainDIT)(
     max_img_h=240,
     max_img_w=240,
     max_frames=128,
@@ -223,7 +230,7 @@ PREDICT2_TEXT2IMAGE_NET_2B = L(MiniTrainDIT)(
     rope_enable_fps_modulation=False,
 )
 
-PREDICT2_TEXT2IMAGE_PIPELINE_2B = Text2ImagePipelineConfig(
+_PREDICT2_TEXT2IMAGE_PIPELINE_2B = Text2ImagePipelineConfig(
     adjust_video_noise=True,
     conditioner=L(TextConditioner)(
         fps=L(ReMapkey)(
@@ -243,7 +250,7 @@ PREDICT2_TEXT2IMAGE_PIPELINE_2B = Text2ImagePipelineConfig(
             input_key=["t5_text_embeddings"],
         ),
     ),
-    net=PREDICT2_TEXT2IMAGE_NET_2B,
+    net=_PREDICT2_TEXT2IMAGE_NET_2B,
     precision="bfloat16",
     rectified_flow_t_scaling_factor=1.0,
     rectified_flow_loss_weight_uniform=True,
@@ -258,17 +265,17 @@ PREDICT2_TEXT2IMAGE_PIPELINE_2B = Text2ImagePipelineConfig(
         chunk_duration=81,
         load_mean_std=False,
         name="tokenizer",
-        vae_pth="checkpoints/nvidia/Cosmos-Predict2-2B-Text2Image/tokenizer/tokenizer.pth",
+        vae_pth=get_cosmos_predict2_text2image_tokenizer(model_size="2B"),
     ),
     guardrail_config=CosmosGuardrailConfig(
-        checkpoint_dir="checkpoints/",
+        checkpoint_dir=get_checkpoints_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
 )
 
 # Cosmos Predict2 Text2Image 14B
-PREDICT2_TEXT2IMAGE_NET_14B = L(MiniTrainDIT)(
+_PREDICT2_TEXT2IMAGE_NET_14B = L(MiniTrainDIT)(
     max_img_h=240,
     max_img_w=240,
     max_frames=128,
@@ -302,7 +309,7 @@ PREDICT2_TEXT2IMAGE_NET_14B = L(MiniTrainDIT)(
     rope_enable_fps_modulation=False,
 )
 
-PREDICT2_TEXT2IMAGE_PIPELINE_14B = Text2ImagePipelineConfig(
+_PREDICT2_TEXT2IMAGE_PIPELINE_14B = Text2ImagePipelineConfig(
     adjust_video_noise=True,
     conditioner=L(TextConditioner)(
         fps=L(ReMapkey)(
@@ -322,7 +329,7 @@ PREDICT2_TEXT2IMAGE_PIPELINE_14B = Text2ImagePipelineConfig(
             input_key=["t5_text_embeddings"],
         ),
     ),
-    net=PREDICT2_TEXT2IMAGE_NET_14B,
+    net=_PREDICT2_TEXT2IMAGE_NET_14B,
     precision="bfloat16",
     rectified_flow_t_scaling_factor=1.0,
     rectified_flow_loss_weight_uniform=True,
@@ -337,11 +344,32 @@ PREDICT2_TEXT2IMAGE_PIPELINE_14B = Text2ImagePipelineConfig(
         chunk_duration=81,
         load_mean_std=False,
         name="tokenizer",
-        vae_pth="checkpoints/nvidia/Cosmos-Predict2-14B-Text2Image/tokenizer/tokenizer.pth",
+        vae_pth=get_cosmos_predict2_text2image_tokenizer(model_size="14B"),
     ),
     guardrail_config=CosmosGuardrailConfig(
-        checkpoint_dir="checkpoints/",
+        checkpoint_dir=get_checkpoints_dir(),
         offload_model_to_cpu=True,
         enabled=True,
     ),
 )
+
+
+@dataclasses.dataclass(frozen=True)
+class _Text2ImagePipelineConfig:
+    model_size: CosmosPredict2Video2WorldModelSize
+    fast_tokenizer: bool = dataclasses.field(default=False, kw_only=True)
+
+
+_PREDICT2_TEXT2IMAGE_PIPELINES: dict[_Text2ImagePipelineConfig, Text2ImagePipelineConfig] = {
+    _Text2ImagePipelineConfig("0.6B"): _PREDICT2_TEXT2IMAGE_PIPELINE_0P6B,
+    _Text2ImagePipelineConfig("2B"): _PREDICT2_TEXT2IMAGE_PIPELINE_2B,
+    _Text2ImagePipelineConfig("14B"): _PREDICT2_TEXT2IMAGE_PIPELINE_14B,
+    _Text2ImagePipelineConfig("0.6B", fast_tokenizer=True): _PREDICT2_TEXT2IMAGE_PIPELINE_0P6B_FAST_TOKENIZER,
+}
+
+
+def get_cosmos_predict2_text2image_pipeline(
+    *, model_size: CosmosPredict2Video2WorldModelSize, fast_tokenizer: bool = False
+) -> Text2ImagePipelineConfig:
+    key = _Text2ImagePipelineConfig(model_size, fast_tokenizer=fast_tokenizer)
+    return _PREDICT2_TEXT2IMAGE_PIPELINES[key]

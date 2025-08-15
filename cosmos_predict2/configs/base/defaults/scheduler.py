@@ -17,9 +17,8 @@ from hydra.core.config_store import ConfigStore
 
 from cosmos_predict2.functional.lr_scheduler import LambdaLinearScheduler
 from imaginaire.lazy_config import LazyCall as L
-from imaginaire.lazy_config import LazyDict
 
-LambdaLinearSchedulerConfig: LazyDict = L(LambdaLinearScheduler)(
+LambdaLinearSchedulerConfig = L(LambdaLinearScheduler)(
     warm_up_steps=[1000],
     cycle_lengths=[10000000000000],
     f_start=[1.0e-6],

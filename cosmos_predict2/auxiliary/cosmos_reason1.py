@@ -23,6 +23,7 @@ from transformers import (
     set_seed,
 )
 
+from imaginaire.constants import get_cosmos_reason1_model_dir
 from imaginaire.utils import log
 
 SYSTEM_PROMPT_REFINE = (
@@ -262,5 +263,5 @@ class CosmosReason1(torch.nn.Module):
 
 
 if __name__ == "__main__":
-    model = CosmosReason1("checkpoints/nvidia/Cosmos-Reason1-7B")
+    model = CosmosReason1(get_cosmos_reason1_model_dir())
     print(model.refine_prompt("assets/video2world/input0.jpg", "A bus terminal in the city."))

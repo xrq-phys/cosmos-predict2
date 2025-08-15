@@ -21,6 +21,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from cosmos_predict2.auxiliary.guardrail.common.core import ContentSafetyGuardrail, GuardrailRunner
 from cosmos_predict2.auxiliary.guardrail.llamaGuard3.categories import UNSAFE_CATEGORIES
+from imaginaire.constants import get_llama_guard3_model_dir
 from imaginaire.utils import log, misc
 
 SAFE = misc.Color.green("SAFE")
@@ -121,7 +122,7 @@ def parse_args():
 
 
 def main(args):
-    llamaGuard3 = LlamaGuard3(checkpoint_dir="checkpoints/meta-llama/Llama-Guard-3-8B")
+    llamaGuard3 = LlamaGuard3(checkpoint_dir=get_llama_guard3_model_dir())
     runner = GuardrailRunner(safety_models=[llamaGuard3])
     with misc.timer("Llama Guard 3 safety check"):
         safety, message = runner.run_safety_check(args.prompt)

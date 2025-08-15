@@ -26,7 +26,7 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import is_dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any, Generic, TypeAlias, TypeVar, cast
 
 import attrs
 import yaml
@@ -47,7 +47,9 @@ except ImportError:
 from imaginaire.lazy_config.file_io import PathManager
 from imaginaire.lazy_config.registry import _convert_target_to_string
 
-__all__ = ["LazyCall", "LazyConfig"]
+__all__ = ["LazyCall", "LazyConfig", "LazyDict"]
+
+T = TypeVar("T")
 
 
 def sort_dict(d: dict[str, Any]) -> OrderedDict[str, Any]:
@@ -86,7 +88,16 @@ def get_default_params(cls_or_func):
     return default_params
 
 
-class LazyCall:
+if TYPE_CHECKING:
+    # Have `LazyDict[T]` behave as `T`, so that attribute access works. Ideally, it
+    # would be a subclass of `T`, but this doesn't seem to be possible in the type
+    # system yet.
+    LazyDict: TypeAlias = T
+else:
+    LazyDict = DictConfig
+
+
+class LazyCall(Generic[T]):
     """
     Wrap a callable so that when it's called, the call will not be executed,
     but returns a dict that describes the call.
@@ -103,12 +114,12 @@ class LazyCall:
         layer = instantiate(layer_cfg)
     """
 
-    def __init__(self, target):
+    def __init__(self, target: type[T]):
         if not (callable(target) or isinstance(target, (str, abc.Mapping))):
             raise TypeError(f"target of LazyCall must be a callable or defines a callable! Got {target}")
         self._target = target
 
-    def __call__(self, **kwargs):
+    def __call__(self, **kwargs) -> LazyDict[T]:
         if is_dataclass(self._target) or attrs.has(self._target):
             # omegaconf object cannot hold dataclass type
             # https://github.com/omry/omegaconf/issues/784
@@ -120,7 +131,7 @@ class LazyCall:
         _final_params = get_default_params(self._target)
         _final_params.update(kwargs)
 
-        return DictConfig(content=_final_params, flags={"allow_objects": True})
+        return cast(LazyDict[T], DictConfig(content=_final_params, flags={"allow_objects": True}))
 
 
 def _visit_dict_config(cfg, func):

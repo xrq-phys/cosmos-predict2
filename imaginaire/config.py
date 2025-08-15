@@ -23,7 +23,8 @@ from typing import Any, TypeVar
 import attrs
 import torch
 import torch.utils.data
-import torch.utils.data.distributed
+
+from imaginaire.model import ImaginaireModel
 
 try:
     from megatron.core import ModelParallelConfig
@@ -319,7 +320,7 @@ class TrainerConfig:
     type: builtins.type[ImaginaireTrainer] = ImaginaireTrainer
     # Set the callback class.
     # Defaults to the callbacks below.
-    callbacks: LazyDict = LazyDict(  # noqa: RUF009
+    callbacks: LazyDict[dict[str, callback.Callback]] = LazyDict(  # noqa: RUF009
         dict(
             ema=L(callback.EMAModelCallback)(),
             progress_bar=L(callback.ProgressBarCallback)(),
@@ -364,15 +365,15 @@ class Config:
     """
 
     # Model configs.
-    model: LazyDict
+    model: LazyDict[ImaginaireModel]
     # Optimizer configs.
-    optimizer: LazyDict
+    optimizer: LazyDict[torch.optim.Optimizer]
     # Scheduler configs.
-    scheduler: LazyDict
+    scheduler: LazyDict[torch.optim.lr_scheduler.LRScheduler]
     # Training data configs.
-    dataloader_train: LazyDict
+    dataloader_train: LazyDict[torch.utils.data.DataLoader]
     # Validation data configs.
-    dataloader_val: LazyDict
+    dataloader_val: LazyDict[torch.utils.data.DataLoader]
 
     # Training job configs.
     job: JobConfig = attrs.field(factory=JobConfig)

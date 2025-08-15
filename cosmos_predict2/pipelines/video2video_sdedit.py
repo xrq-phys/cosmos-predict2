@@ -26,6 +26,7 @@ from tqdm import tqdm
 from cosmos_predict2.auxiliary.cosmos_reason1 import CosmosReason1
 from cosmos_predict2.auxiliary.text_encoder import CosmosT5TextEncoder
 from cosmos_predict2.conditioner import DataType
+from cosmos_predict2.configs.base.config_text2image import Text2ImagePipelineConfig
 from cosmos_predict2.configs.base.config_video2world import Video2WorldPipelineConfig
 from cosmos_predict2.datasets.utils import IMAGE_RES_SIZE_INFO, VIDEO_RES_SIZE_INFO
 from cosmos_predict2.models.utils import init_weights_on_device, load_state_dict
@@ -209,7 +210,7 @@ def read_and_process_video_first_frames(
 class Text2ImageSDEditPipeline(Text2ImagePipeline):
     @staticmethod
     def from_config(
-        config: LazyDict,
+        config: LazyDict[Text2ImagePipelineConfig],
         dit_path: str = "",
         text_encoder_path: str = "",
         device: str = "cuda",

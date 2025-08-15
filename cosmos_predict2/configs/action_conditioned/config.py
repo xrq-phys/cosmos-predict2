@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import dataclasses
+
 from cosmos_predict2.conditioner import ActionConditioner, BooleanFlag, ReMapkey, TextAttr
 from cosmos_predict2.configs.base.config_video2world import (
     ConditioningStrategy,
@@ -24,10 +26,18 @@ from cosmos_predict2.configs.base.defaults.ema import EMAConfig
 from cosmos_predict2.models.text2image_dit import SACConfig
 from cosmos_predict2.models.video2world_action_dit import ActionConditionedMinimalV1LVGDiT
 from cosmos_predict2.tokenizers.tokenizer import TokenizerInterface
+from imaginaire.constants import (
+    CosmosPredict2ActionConditionedFPS,
+    CosmosPredict2ActionConditionedModelSize,
+    CosmosPredict2ActionConditionedResolution,
+    get_checkpoints_dir,
+    get_cosmos_predict2_video2world_tokenizer,
+    get_cosmos_reason1_model_dir,
+)
 from imaginaire.lazy_config import LazyCall as L
 
 # Cosmos Predict2 Video2World 2B
-PREDICT2_VIDEO2WORLD_NET_2B_ACTION_CONDITIONED = L(ActionConditionedMinimalV1LVGDiT)(
+_PREDICT2_ACTION_CONDITIONED_NET_2B = L(ActionConditionedMinimalV1LVGDiT)(
     max_img_h=240,
     max_img_w=240,
     max_frames=128,
@@ -60,7 +70,7 @@ PREDICT2_VIDEO2WORLD_NET_2B_ACTION_CONDITIONED = L(ActionConditionedMinimalV1LVG
     action_dim=7 * 12,
 )
 
-PREDICT2_VIDEO2WORLD_PIPELINE_2B_ACTION_CONDITIONED = Video2WorldPipelineConfig(
+_PREDICT2_ACTION_CONDITIONED_PIPELINE_2B = Video2WorldPipelineConfig(
     adjust_video_noise=True,
     conditioner=L(ActionConditioner)(
         fps=L(ReMapkey)(
@@ -95,7 +105,7 @@ PREDICT2_VIDEO2WORLD_PIPELINE_2B_ACTION_CONDITIONED = Video2WorldPipelineConfig(
     conditioning_strategy=str(ConditioningStrategy.FRAME_REPLACE),
     min_num_conditional_frames=1,
     max_num_conditional_frames=1,
-    net=PREDICT2_VIDEO2WORLD_NET_2B_ACTION_CONDITIONED,
+    net=_PREDICT2_ACTION_CONDITIONED_NET_2B,
     precision="bfloat16",
     rectified_flow_t_scaling_factor=1.0,
     rectified_flow_loss_weight_uniform=True,
@@ -111,17 +121,37 @@ PREDICT2_VIDEO2WORLD_PIPELINE_2B_ACTION_CONDITIONED = Video2WorldPipelineConfig(
         chunk_duration=81,
         load_mean_std=False,
         name="tokenizer",
-        vae_pth="checkpoints/nvidia/Cosmos-Predict2-2B-Video2World/tokenizer/tokenizer.pth",
+        vae_pth=get_cosmos_predict2_video2world_tokenizer(model_size="2B"),
     ),
     # disable prompt refiner and guardrail for action conditional
     prompt_refiner_config=CosmosReason1Config(
-        checkpoint_dir="checkpoints/nvidia/Cosmos-Reason1-7B",
+        checkpoint_dir=get_cosmos_reason1_model_dir(),
         offload_model_to_cpu=True,
         enabled=False,
     ),
     guardrail_config=CosmosGuardrailConfig(
-        checkpoint_dir="checkpoints/",
+        checkpoint_dir=get_checkpoints_dir(),
         offload_model_to_cpu=True,
         enabled=False,
     ),
 )
+
+
+@dataclasses.dataclass(frozen=True)
+class _ActionConditionedPipelineConfig:
+    model_size: CosmosPredict2ActionConditionedModelSize
+
+
+_PREDICT2_ACTION_CONDITIONED_PIPELINES: dict[_ActionConditionedPipelineConfig, Video2WorldPipelineConfig] = {
+    _ActionConditionedPipelineConfig("2B"): _PREDICT2_ACTION_CONDITIONED_PIPELINE_2B,
+}
+
+
+def get_cosmos_predict2_action_conditioned_pipeline(
+    *,
+    model_size: CosmosPredict2ActionConditionedModelSize,
+    resolution: CosmosPredict2ActionConditionedResolution,
+    fps: CosmosPredict2ActionConditionedFPS,
+) -> Video2WorldPipelineConfig:
+    key = _ActionConditionedPipelineConfig(model_size)
+    return _PREDICT2_ACTION_CONDITIONED_PIPELINES[key]

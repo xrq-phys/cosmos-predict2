@@ -21,18 +21,19 @@ from megatron.core import parallel_state
 from torch.distributed.device_mesh import init_device_mesh
 
 from cosmos_predict2.configs.base.config_multiview import (
-    PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES,
     MultiviewPipelineConfig,
+    get_cosmos_predict2_multiview_pipeline,
 )
 from cosmos_predict2.models.video2world_model import Predict2Video2WorldModel
 from cosmos_predict2.pipelines.multiview import MultiviewPipeline
+from imaginaire.constants import get_cosmos_predict2_multiview_checkpoint
 from imaginaire.utils import log
 
 
 @attrs.define(slots=False)
 class Predict2ModelManagerConfig:
     # Local path, use it in fast debug run
-    dit_path: str = "checkpoints/nvidia/Cosmos-Predict2-2B-Multiview/model.pt"
+    dit_path: str = get_cosmos_predict2_multiview_checkpoint(model_size="2B")
     # For inference
     text_encoder_path: str = ""  # not used in training.
 
@@ -56,7 +57,9 @@ class Predict2MultiviewModelConfig:
     # This is used for the original way to load models
     model_manager_config: Predict2ModelManagerConfig = Predict2ModelManagerConfig()  # noqa: RUF009
     # This is a new way to load models
-    pipe_config: MultiviewPipelineConfig = PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES
+    pipe_config: MultiviewPipelineConfig = get_cosmos_predict2_multiview_pipeline(  # noqa: RUF009
+        model_size="2B", views=7, frames=29, fps=10
+    )
     # debug flag
     debug_without_randomness: bool = False
     fsdp_shard_size: int = 0  # 0 means not using fsdp, -1 means set to world size

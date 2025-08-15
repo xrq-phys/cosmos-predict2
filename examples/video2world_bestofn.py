@@ -26,6 +26,14 @@ from typing import Any
 
 import torch
 
+from imaginaire.constants import (
+    CosmosPredict2Video2WorldAspectRatio,
+    CosmosPredict2Video2WorldFPS,
+    CosmosPredict2Video2WorldModelSize,
+    CosmosPredict2Video2WorldResolution,
+    get_cosmos_reason1_model_dir,
+)
+
 # Set TOKENIZERS_PARALLELISM environment variable to avoid deadlocks with multiprocessing
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -197,20 +205,20 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Best-of-N Video Generation with Cosmos Predict2")
     parser.add_argument(
         "--model_size",
-        choices=["2B", "14B"],
+        choices=CosmosPredict2Video2WorldModelSize.__args__,
         default="2B",
         help="Size of the model to use for video-to-world generation",
     )
     parser.add_argument(
         "--resolution",
-        choices=["480", "720"],
+        choices=CosmosPredict2Video2WorldResolution.__args__,
         default="720",
         type=str,
         help="Resolution of the model to use for video-to-world generation",
     )
     parser.add_argument(
         "--fps",
-        choices=[10, 16],
+        choices=CosmosPredict2Video2WorldFPS.__args__,
         default=16,
         type=int,
         help="FPS of the model to use for video-to-world generation",
@@ -246,7 +254,7 @@ def parse_args():
     )
     parser.add_argument(
         "--aspect_ratio",
-        choices=["1:1", "4:3", "3:4", "16:9", "9:16"],
+        choices=CosmosPredict2Video2WorldAspectRatio.__args__,
         default="16:9",
         type=str,
         help="Aspect ratio of the generated output (width:height)",
@@ -299,7 +307,7 @@ def parse_args():
     parser.add_argument(
         "--checkpoint_dir",
         type=str,
-        default="checkpoints/nvidia/Cosmos-Reason1-7B",
+        default=get_cosmos_reason1_model_dir(),
         help="Path to the Cosmos-Reason1 checkpoint",
     )
     return parser.parse_args()

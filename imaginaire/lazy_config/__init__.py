@@ -15,16 +15,15 @@
 
 import os
 
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 
 from imaginaire.lazy_config.instantiate import instantiate
-from imaginaire.lazy_config.lazy import LazyCall, LazyConfig
+from imaginaire.lazy_config.lazy import LazyCall, LazyConfig, LazyDict
 from imaginaire.lazy_config.omegaconf_patch import to_object
 
 OmegaConf.to_object = to_object
 
 PLACEHOLDER = None
-LazyDict = DictConfig
 
 __all__ = ["PLACEHOLDER", "LazyCall", "LazyConfig", "LazyDict", "instantiate"]
 

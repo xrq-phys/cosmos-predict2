@@ -26,6 +26,7 @@ from tqdm import tqdm
 
 from cosmos_predict2.auxiliary.text_encoder import CosmosT5TextEncoder
 from cosmos_predict2.conditioner import DataType, TextCondition
+from cosmos_predict2.configs.base.config_text2image import Text2ImagePipelineConfig
 from cosmos_predict2.datasets.utils import IMAGE_RES_SIZE_INFO
 from cosmos_predict2.models.text2image_dit import MiniTrainDIT
 from cosmos_predict2.models.utils import init_weights_on_device, load_state_dict
@@ -84,7 +85,7 @@ class Text2ImagePipeline(BasePipeline):
 
     @staticmethod
     def from_config(
-        config: LazyDict,
+        config: LazyDict[Text2ImagePipelineConfig],
         dit_path: str = "",
         text_encoder_path: str = "",
         device: str = "cuda",

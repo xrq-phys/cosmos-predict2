@@ -17,6 +17,15 @@ import argparse
 import json
 import os
 
+from imaginaire.constants import (
+    CosmosPredict2Video2WorldAspectRatio,
+    CosmosPredict2Video2WorldFPS,
+    CosmosPredict2Video2WorldModelSize,
+    CosmosPredict2Video2WorldResolution,
+    get_cosmos_predict2_video2world_checkpoint,
+    get_t5_model_dir,
+)
+
 # Set TOKENIZERS_PARALLELISM environment variable to avoid deadlocks with multiprocessing
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -26,10 +35,7 @@ import torch
 from megatron.core import parallel_state
 
 from cosmos_predict2.configs.base.config_video2world import (
-    PREDICT2_VIDEO2WORLD_PIPELINE_2B,
-    PREDICT2_VIDEO2WORLD_PIPELINE_14B,
-    PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B,
-    PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B,
+    get_cosmos_predict2_video2world_pipeline,
 )
 from cosmos_predict2.pipelines.video2world import _IMAGE_EXTENSIONS, _VIDEO_EXTENSIONS, Video2WorldPipeline
 from imaginaire.utils import distributed, log, misc
@@ -72,20 +78,20 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Video-to-World Generation with Cosmos Predict2")
     parser.add_argument(
         "--model_size",
-        choices=["2B", "14B"],
+        choices=CosmosPredict2Video2WorldModelSize.__args__,
         default="2B",
         help="Size of the model to use for video-to-world generation",
     )
     parser.add_argument(
         "--resolution",
-        choices=["480", "720"],
+        choices=CosmosPredict2Video2WorldResolution.__args__,
         default="720",
         type=str,
         help="Resolution of the model to use for video-to-world generation",
     )
     parser.add_argument(
         "--fps",
-        choices=[10, 16],
+        choices=CosmosPredict2Video2WorldFPS.__args__,
         default=16,
         type=int,
         help="FPS of the model to use for video-to-world generation",
@@ -121,7 +127,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--aspect_ratio",
-        choices=["1:1", "4:3", "3:4", "16:9", "9:16"],
+        choices=CosmosPredict2Video2WorldAspectRatio.__args__,
         default="16:9",
         type=str,
         help="Aspect ratio of the generated output (width:height)",
@@ -184,55 +190,23 @@ def parse_args() -> argparse.Namespace:
 
 
 def setup_pipeline(args: argparse.Namespace, text_encoder=None):
-    log.info(f"Using model size: {args.model_size}")
-    if hasattr(args, "natten") and args.natten:
-        assert args.model_size in ["2B", "14B"]
-        config = (
-            PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_2B
-            if args.model_size == "2B"
-            else PREDICT2_VIDEO2WORLD_WITH_NATTEN_PIPELINE_14B
-        )
-
-        config.resolution = args.resolution
-
-        if args.fps == 10:
-            config.state_t = 16
-
-        if args.resolution != "720":
-            raise NotImplementedError("Cosmos-Predict2 + NATTEN only supports 720p inference at the moment.")
-
-        if args.aspect_ratio != "16:9":
-            raise NotImplementedError("Cosmos-Predict2 + NATTEN only supports 16:9 aspect ratio at the moment.")
-
-        dit_path = (
-            f"checkpoints/nvidia/Cosmos-Predict2-{args.model_size}-Video2World/model-720p-{args.fps}fps-natten.pt"
-        )
-
-    elif args.model_size == "2B":
-        config = PREDICT2_VIDEO2WORLD_PIPELINE_2B
-
-        config.resolution = args.resolution
-        if args.fps == 10:  # default is 16 so no need to change config
-            config.state_t = 16
-
-        dit_path = f"checkpoints/nvidia/Cosmos-Predict2-2B-Video2World/model-{args.resolution}p-{args.fps}fps.pt"
-    elif args.model_size == "14B":
-        config = PREDICT2_VIDEO2WORLD_PIPELINE_14B
-
-        config.resolution = args.resolution
-        if args.fps == 10:  # default is 16 so no need to change config
-            config.state_t = 16
-
-        dit_path = f"checkpoints/nvidia/Cosmos-Predict2-14B-Video2World/model-{args.resolution}p-{args.fps}fps.pt"
-    else:
-        raise ValueError("Invalid model size. Choose either '2B' or '14B'.")
+    config = get_cosmos_predict2_video2world_pipeline(
+        model_size=args.model_size, resolution=args.resolution, fps=args.fps, natten=getattr(args, "natten", False)
+    )
     if hasattr(args, "dit_path") and args.dit_path:
         dit_path = args.dit_path
-
+    else:
+        dit_path = get_cosmos_predict2_video2world_checkpoint(
+            model_size=args.model_size,
+            resolution=args.resolution,
+            fps=args.fps,
+            aspect_ratio=args.aspect_ratio,
+            natten=getattr(args, "natten", False),
+        )
     log.info(f"Using dit_path: {dit_path}")
 
     # Only set up text encoder path if no encoder is provided
-    text_encoder_path = None if text_encoder is not None else "checkpoints/google-t5/t5-11b"
+    text_encoder_path = None if text_encoder is not None else get_t5_model_dir()
     if text_encoder is not None:
         log.info("Using provided text encoder")
     else:

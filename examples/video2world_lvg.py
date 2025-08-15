@@ -27,10 +27,15 @@ from megatron.core import parallel_state
 from tqdm import tqdm
 
 from cosmos_predict2.configs.base.config_video2world import (
-    PREDICT2_VIDEO2WORLD_PIPELINE_2B,
-    PREDICT2_VIDEO2WORLD_PIPELINE_14B,
+    get_cosmos_predict2_video2world_pipeline,
 )
 from cosmos_predict2.pipelines.video2world import _IMAGE_EXTENSIONS, _VIDEO_EXTENSIONS, Video2WorldPipeline
+from imaginaire.constants import (
+    CosmosPredict2Video2WorldAspectRatio,
+    CosmosPredict2Video2WorldModelSize,
+    get_cosmos_predict2_video2world_checkpoint,
+    get_t5_model_dir,
+)
 from imaginaire.utils import distributed, log, misc
 from imaginaire.utils.io import save_image_or_video, save_text_prompts
 
@@ -71,7 +76,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Video-to-World Generation with Cosmos Predict2")
     parser.add_argument(
         "--model_size",
-        choices=["2B", "14B"],
+        choices=CosmosPredict2Video2WorldModelSize.__args__,
         default="2B",
         help="Size of the model to use for video-to-world generation",
     )
@@ -106,7 +111,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--aspect_ratio",
-        choices=["1:1", "4:3", "3:4", "16:9", "9:16"],
+        choices=CosmosPredict2Video2WorldAspectRatio.__args__,
         default="16:9",
         type=str,
         help="Aspect ratio of the generated output (width:height)",
@@ -152,19 +157,16 @@ def parse_args() -> argparse.Namespace:
 
 
 def setup_pipeline(args: argparse.Namespace):
-    log.info(f"Using model size: {args.model_size}")
-    if args.model_size == "2B":
-        config = PREDICT2_VIDEO2WORLD_PIPELINE_2B
-        dit_path = "checkpoints/nvidia/Cosmos-Predict2-2B-Video2World/model-720p-16fps.pt"
-    elif args.model_size == "14B":
-        config = PREDICT2_VIDEO2WORLD_PIPELINE_14B
-        dit_path = "checkpoints/nvidia/Cosmos-Predict2-14B-Video2World/model-720p-16fps.pt"
-    else:
-        raise ValueError("Invalid model size. Choose either '2B' or '14B'.")
+    resolution = "720"
+    fps = 16
+    config = get_cosmos_predict2_video2world_pipeline(model_size=args.model_size, resolution=resolution, fps=fps)
     if args.dit_path:
         dit_path = args.dit_path
-
-    text_encoder_path = "checkpoints/google-t5/t5-11b"
+    else:
+        dit_path = get_cosmos_predict2_video2world_checkpoint(
+            model_size=args.model_size, resolution=resolution, fps=fps, aspect_ratio=args.aspect_ratio
+        )
+    text_encoder_path = get_t5_model_dir()
 
     misc.set_random_seed(seed=args.seed, by_rank=True)
     # Initialize cuDNN.

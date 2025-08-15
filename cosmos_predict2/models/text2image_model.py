@@ -26,12 +26,16 @@ from torch.distributed.tensor import DTensor
 from torch.nn.modules.module import _IncompatibleKeys
 
 from cosmos_predict2.conditioner import TextCondition
-from cosmos_predict2.configs.base.config_text2image import PREDICT2_TEXT2IMAGE_PIPELINE_2B, Text2ImagePipelineConfig
+from cosmos_predict2.configs.base.config_text2image import (
+    Text2ImagePipelineConfig,
+    get_cosmos_predict2_text2image_pipeline,
+)
 from cosmos_predict2.networks.model_weights_stats import WeightTrainingStat
 from cosmos_predict2.pipelines.text2image import Text2ImagePipeline
 from cosmos_predict2.utils.checkpointer import non_strict_load_model
 from cosmos_predict2.utils.optim_instantiate import get_base_scheduler
 from cosmos_predict2.utils.torch_future import clip_grad_norm_
+from imaginaire.constants import get_cosmos_predict2_text2image_checkpoint
 from imaginaire.lazy_config import LazyDict, instantiate
 from imaginaire.model import ImaginaireModel
 from imaginaire.utils import log
@@ -40,7 +44,7 @@ from imaginaire.utils import log
 @attrs.define(slots=False)
 class Predict2ModelManagerConfig:
     # Local path, use it in fast debug run
-    dit_path: str = "checkpoints/nvidia/Cosmos-Predict2-2B-Text2Image/model.pt"
+    dit_path: str = get_cosmos_predict2_text2image_checkpoint(model_size="2B")
     # For inference
     text_encoder_path: str = ""  # not used in training.
 
@@ -62,7 +66,7 @@ class Predict2Text2ImageModelConfig:
     # This is used for the original way to load models
     model_manager_config: Predict2ModelManagerConfig = Predict2ModelManagerConfig()  # noqa: RUF009
     # This is a new way to load models
-    pipe_config: Text2ImagePipelineConfig = PREDICT2_TEXT2IMAGE_PIPELINE_2B
+    pipe_config: Text2ImagePipelineConfig = get_cosmos_predict2_text2image_pipeline(model_size="2B")  # noqa: RUF009
     # debug flag
     debug_without_randomness: bool = False
     fsdp_shard_size: int = 0  # 0 means not using fsdp, -1 means set to world size
@@ -157,7 +161,9 @@ class Predict2Text2ImageModel(ImaginaireModel):
 
     # New function, added for i4 adaption
     def init_optimizer_scheduler(
-        self, optimizer_config: LazyDict, scheduler_config: LazyDict
+        self,
+        optimizer_config: LazyDict[torch.optim.Optimizer],
+        scheduler_config: LazyDict[torch.optim.lr_scheduler.LRScheduler],
     ) -> tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LRScheduler]:
         """Creates the optimizer and scheduler for the model.
 

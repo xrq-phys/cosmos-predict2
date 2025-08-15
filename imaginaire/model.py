@@ -36,7 +36,9 @@ class ImaginaireModel(torch.nn.Module):
         super().__init__()
 
     def init_optimizer_scheduler(
-        self, optimizer_config: LazyDict, scheduler_config: LazyDict
+        self,
+        optimizer_config: LazyDict[torch.optim.Optimizer],
+        scheduler_config: LazyDict[torch.optim.lr_scheduler.LRScheduler],
     ) -> tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LRScheduler]:
         """Creates the optimizer and scheduler for the model.
 

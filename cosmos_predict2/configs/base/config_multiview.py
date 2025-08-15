@@ -14,6 +14,7 @@
 # limitations under the License.
 
 
+import dataclasses
 from copy import deepcopy
 
 import attrs
@@ -30,6 +31,16 @@ from cosmos_predict2.configs.base.config_video2world import (
 from cosmos_predict2.models.multiview_dit import MultiViewDiT
 from cosmos_predict2.models.text2image_dit import SACConfig
 from imaginaire.config import LazyDict, make_freezable
+from imaginaire.constants import (
+    CosmosPredict2MultiviewFPS,
+    CosmosPredict2MultiviewFrames,
+    CosmosPredict2MultiviewResolution,
+    CosmosPredict2MultiviewViews,
+    CosmosPredict2Video2WorldModelSize,
+    get_checkpoints_dir,
+    get_cosmos_predict2_video2world_tokenizer,
+    get_cosmos_reason1_model_dir,
+)
 from imaginaire.lazy_config import LazyCall as L
 
 
@@ -37,7 +48,7 @@ from imaginaire.lazy_config import LazyCall as L
 @attrs.define(slots=False)
 class MultiviewPipelineConfig:
     adjust_video_noise: bool
-    conditioner: LazyDict
+    conditioner: LazyDict[MultiViewConditioner]
     conditioning_strategy: str
     min_num_conditional_frames_per_view: int
     max_num_conditional_frames_per_view: int
@@ -46,8 +57,8 @@ class MultiviewPipelineConfig:
     # view_condition_dim: int
     # n_cameras_emb: int
     sigma_conditional: float
-    net: LazyDict
-    tokenizer: LazyDict
+    net: LazyDict[MultiViewDiT]
+    tokenizer: LazyDict[TokenizerInterface]
     prompt_refiner_config: CosmosReason1Config
     guardrail_config: CosmosGuardrailConfig
     precision: str
@@ -70,7 +81,7 @@ class MultiviewPipelineConfig:
     )
 
 
-PREDICT2_MULTIVIEW_NET_2B_10FPS_7VIEWS_29FRAMES = L(MultiViewDiT)(
+_PREDICT2_MULTIVIEW_NET_2B_10FPS_7VIEWS_29FRAMES = L(MultiViewDiT)(
     max_img_h=240,
     max_img_w=240,
     max_frames=128,
@@ -105,7 +116,7 @@ PREDICT2_MULTIVIEW_NET_2B_10FPS_7VIEWS_29FRAMES = L(MultiViewDiT)(
     concat_view_embedding=True,
 )
 
-PREDICT2_MULTIVIEW_PIPELINE_2B_10FPS_7VIEWS_29FRAMES = MultiviewPipelineConfig(
+_PREDICT2_MULTIVIEW_PIPELINE_2B_10FPS_7VIEWS_29FRAMES = MultiviewPipelineConfig(
     adjust_video_noise=True,
     conditioner=L(MultiViewConditioner)(
         fps=L(ReMapkey)(
@@ -146,7 +157,7 @@ PREDICT2_MULTIVIEW_PIPELINE_2B_10FPS_7VIEWS_29FRAMES = MultiviewPipelineConfig(
     min_num_conditional_frames_per_view=0,
     max_num_conditional_frames_per_view=1,
     condition_locations=[ConditionLocation.FIRST_RANDOM_N],
-    net=PREDICT2_MULTIVIEW_NET_2B_10FPS_7VIEWS_29FRAMES,
+    net=_PREDICT2_MULTIVIEW_NET_2B_10FPS_7VIEWS_29FRAMES,
     precision="bfloat16",
     rectified_flow_t_scaling_factor=1.0,
     resize_online=True,
@@ -162,20 +173,51 @@ PREDICT2_MULTIVIEW_PIPELINE_2B_10FPS_7VIEWS_29FRAMES = MultiviewPipelineConfig(
         temporal_window=16,
         load_mean_std=False,
         name="tokenizer",
-        vae_pth="checkpoints/nvidia/Cosmos-Predict2-2B-Video2World/tokenizer/tokenizer.pth",
+        vae_pth=get_cosmos_predict2_video2world_tokenizer(model_size="2B"),
     ),
     prompt_refiner_config=CosmosReason1Config(
-        checkpoint_dir="checkpoints/nvidia/Cosmos-Reason1-7B",
+        checkpoint_dir=get_cosmos_reason1_model_dir(),
         offload_model_to_cpu=True,
         enabled=False,
     ),
     guardrail_config=CosmosGuardrailConfig(
-        checkpoint_dir="checkpoints/",
+        checkpoint_dir=get_checkpoints_dir(),
         offload_model_to_cpu=True,
         enabled=False,
     ),
 )
 
-PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES = deepcopy(
-    PREDICT2_MULTIVIEW_PIPELINE_2B_10FPS_7VIEWS_29FRAMES
+_PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES = deepcopy(
+    _PREDICT2_MULTIVIEW_PIPELINE_2B_10FPS_7VIEWS_29FRAMES
 )
+
+
+@dataclasses.dataclass(frozen=True)
+class _MultiviewPipelineConfig:
+    model_size: CosmosPredict2Video2WorldModelSize
+    resolution: CosmosPredict2MultiviewResolution
+    fps: CosmosPredict2MultiviewFPS
+    views: dataclasses.field(default=CosmosPredict2MultiviewViews, kw_only=True)
+    frames: dataclasses.field(default=CosmosPredict2MultiviewFrames, kw_only=True)
+
+
+_PREDICT2_MULTIVIEW_PIPELINES: dict[
+    _MultiviewPipelineConfig,
+    MultiviewPipelineConfig,
+] = {
+    _MultiviewPipelineConfig(
+        "2B", "720", 10, views=7, frames=29
+    ): _PREDICT2_MULTIVIEW_PIPELINE_2B_720P_10FPS_7VIEWS_29FRAMES,
+}
+
+
+def get_cosmos_predict2_multiview_pipeline(
+    *,
+    model_size: CosmosPredict2Video2WorldModelSize,
+    views: CosmosPredict2MultiviewViews,
+    frames: CosmosPredict2MultiviewFrames,
+    resolution: CosmosPredict2MultiviewResolution = "720",
+    fps: CosmosPredict2MultiviewFPS = 16,
+) -> MultiviewPipelineConfig:
+    key = _MultiviewPipelineConfig(model_size, resolution, fps, views=views, frames=frames)
+    return _PREDICT2_MULTIVIEW_PIPELINES[key]
