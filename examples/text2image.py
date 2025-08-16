@@ -103,7 +103,9 @@ def setup_pipeline(args: argparse.Namespace, text_encoder=None) -> Text2ImagePip
     if hasattr(args, "dit_path") and args.dit_path:
         dit_path = args.dit_path
     else:
-        dit_path = get_cosmos_predict2_text2image_checkpoint(model_size=args.model_size)
+        dit_path = get_cosmos_predict2_text2image_checkpoint(
+            model_size=args.model_size, fast_tokenizer=args.use_fast_tokenizer
+        )
     log.info(f"Using dit_path: {dit_path}")
     # Only set up text encoder path if no encoder is provided
     text_encoder_path = None if text_encoder is not None else get_t5_model_dir()

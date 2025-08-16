@@ -36,7 +36,7 @@ def get_cosmos_reason1_model_dir() -> str:
     return f"{get_checkpoints_dir()}/nvidia/Cosmos-Reason1-7B"
 
 
-CosmosPredict2Text2ImageModelSize = Literal["2B", "14B"]
+CosmosPredict2Text2ImageModelSize = Literal["0.6B", "2B", "14B"]
 CosmosPredict2Text2ImageModelType = Literal["Text2Image"]
 
 
@@ -47,17 +47,29 @@ def _get_cosmos_predict2_text2image_model_dir(
 
 
 def get_cosmos_predict2_text2image_tokenizer(
-    *, model_size: CosmosPredict2Text2ImageModelSize, model_type: CosmosPredict2Text2ImageModelType = "Text2Image"
+    *,
+    model_size: CosmosPredict2Text2ImageModelSize,
+    model_type: CosmosPredict2Text2ImageModelType = "Text2Image",
+    fast_tokenizer: bool = False,
 ) -> str:
     model_dir = _get_cosmos_predict2_text2image_model_dir(model_size=model_size, model_type=model_type)
-    return f"{model_dir}/tokenizer/tokenizer.pth"
+    suffix = ""
+    if fast_tokenizer:
+        suffix += "_fast"
+    return f"{model_dir}/tokenizer{suffix}/tokenizer.pth"
 
 
 def get_cosmos_predict2_text2image_checkpoint(
-    *, model_size: CosmosPredict2Text2ImageModelSize, model_type: CosmosPredict2Text2ImageModelType = "Text2Image"
+    *,
+    model_size: CosmosPredict2Text2ImageModelSize,
+    model_type: CosmosPredict2Text2ImageModelType = "Text2Image",
+    fast_tokenizer: bool = False,
 ) -> str:
     model_dir = _get_cosmos_predict2_text2image_model_dir(model_size=model_size, model_type=model_type)
-    return f"{model_dir}/model.pt"
+    suffix = ""
+    if fast_tokenizer:
+        suffix += "_fast_tokenizer"
+    return f"{model_dir}/model{suffix}.pt"
 
 
 CosmosPredict2Video2WorldModelSize = Literal["0.6B", "2B", "14B"]

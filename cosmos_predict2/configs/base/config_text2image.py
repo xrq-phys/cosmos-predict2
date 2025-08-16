@@ -185,7 +185,7 @@ _PREDICT2_TEXT2IMAGE_PIPELINE_0P6B_FAST_TOKENIZER = Text2ImagePipelineConfig(
     text_encoder_class="T5",
     tokenizer=L(CosmosImageTokenizer)(
         name="tokenizer",
-        vae_pth=get_cosmos_predict2_text2image_tokenizer(model_size="0.6B"),
+        vae_pth=get_cosmos_predict2_text2image_tokenizer(model_size="0.6B", fast_tokenizer=True),
     ),
     guardrail_config=CosmosGuardrailConfig(
         checkpoint_dir=get_checkpoints_dir(),
