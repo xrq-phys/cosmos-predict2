@@ -28,6 +28,42 @@ We visualize the architecture of Cosmos-Predict2 in the following figure.
 * [Cosmos-Predict2-2B-Sample-Action-Conditioned](https://huggingface.co/nvidia/Cosmos-Predict2-2B-Sample-Action-Conditioned): Video + Action based future visual world generation, post-trained on Bridge dataset
 ---
 
+## Diffusers
+
+Cosmos-Predict2 is included in [`diffusers>=0.34.0`](https://huggingface.co/docs/transformers/en/index).
+
+Install system dependencies:
+
+* [uv](https://docs.astral.sh/uv/getting-started/installation/)
+
+  ```shell
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  source $HOME/.local/bin/env
+  ```
+
+* [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/en/guides/cli)
+
+  Accept the [Llama-Guard-3-8B terms](https://huggingface.co/meta-llama/Llama-Guard-3-8B).
+
+  ```shell
+  uv tool install -U "huggingface_hub[cli]"
+  hf auth login
+  ```
+
+Run example inference scripts:
+
+* [Text2Image](scripts/hf_text2image.py)
+
+  ```shell
+  ./scripts/hf_text2image.py output/hf_text2image --prompt "assets/text2image/example_prompt.txt" -v
+  ```
+
+* [Video2World](scripts/hf_video2world.py)
+
+  ```shell
+  ./scripts/hf_video2world.py output/hf_video2world --prompt "assets/video2world/example_prompt.txt" --image "assets/video2world/example_input.jpg" -v
+  ```
+
 ## Quick Start
 
 Here is a quick example demonstrating how to use Cosmos-Predict2-2B-Video2World for video generation:
