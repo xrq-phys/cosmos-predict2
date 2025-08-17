@@ -56,9 +56,6 @@ class NeighborhoodAttentionConfigs:
         "backend": "cutlass-fna",
         "q_tile_shape": (4, 4, 4),
         "kv_tile_shape": (4, 4, 8),
-        "backward_q_tile_shape": (4, 4, 8),
-        "backward_kv_tile_shape": (4, 4, 8),
-        "backward_use_pt_reduction": False,
     }
     inference_configs = {
         # Hopper (SM90)
@@ -74,6 +71,14 @@ class NeighborhoodAttentionConfigs:
             "kv_tile_shape": (4, 4, 8),
             "run_persistent_kernel": True,
         },
+    }
+    quantized_configs = {
+        100: {
+            "backend": "blackwell-fna",
+            "q_tile_shape": (1, 16, 16),
+            "kv_tile_shape": (1, 8, 16),
+            "run_persistent_kernel": True,
+        }
     }
 
     @classmethod
@@ -111,17 +116,19 @@ class NeighborhoodAttentionConfigs:
         return window_size, stride, dilation, is_causal
 
     @classmethod
-    def get_configuration(cls, q):
+    def get_configuration(cls, q, block_scaled_quantize):
         device = q.device
         compute_cap = get_device_cc(device)
-        requires_grad = False
         is_cuda = torch.cuda.is_available() and torch.version.cuda and device.type == "cuda"
 
         natten_configuration = cls.default_config
-        if requires_grad and is_cuda:
-            natten_configuration = cls.default_config_cuda
-        elif is_cuda and compute_cap in cls.inference_configs.keys():
-            natten_configuration = cls.inference_configs[compute_cap]
+        if is_cuda:
+            if compute_cap not in cls.inference_configs.keys():
+                natten_configuration = cls.default_config_cuda
+            else:
+                natten_configuration = cls.inference_configs[compute_cap]
+        if is_cuda and block_scaled_quantize and compute_cap in cls.quantized_configs.keys():
+            natten_configuration = cls.quantized_configs[compute_cap]
 
         return natten_configuration
 

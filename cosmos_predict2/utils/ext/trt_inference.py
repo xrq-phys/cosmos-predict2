@@ -233,7 +233,7 @@ try:
             op = ring_netten_exec
             input_T = T
 
-        natten_configuration = NeighborhoodAttentionConfigs.get_configuration(q_t)
+        natten_configuration = NeighborhoodAttentionConfigs.get_configuration(q_t, block_scaled_quantize)
         window_size_arg, stride_arg, dilation_arg, is_causal = NeighborhoodAttentionConfigs.get_adaptive_parameters(
             window_size=window_size_arg,
             stride=stride_arg,
