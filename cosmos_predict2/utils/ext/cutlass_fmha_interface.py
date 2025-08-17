@@ -1,11 +1,13 @@
-from cutlass_blackwell_fmha import TorchFmhaRunner, sage_quant
-from types import SimpleNamespace
+from natten._libnatten import blackwell_fmha_forward
+from natten.backends.blackwell_fmha import block_quantize_tensor
 from typing import Optional
 import torch
 from .cp_allocators import BaseAllocator
 
-_cutlass_device_apis = SimpleNamespace()
-_cutlass_device_apis.runners = {}
+
+Q_TILE = 256
+KV_TILE = 128
+
 
 @torch.compiler.disable
 def cutlass_fmha_fp8_quantize_all(
@@ -27,20 +29,12 @@ def cutlass_fmha_fp8_quantize_all(
 
     assert sm_version >= 100 and sm_version < 120, "Unsupported SM version"
 
-    dtype = q.dtype
-    channels = q.shape[-1]
-    if (dtype, channels) not in _cutlass_device_apis.runners.keys():
-        runner = TorchFmhaRunner.torch_fmha_runner(torch.float8_e4m3fn, dtype, channels)
-        _cutlass_device_apis.runners[(dtype, channels)] = runner
-    else:
-        runner = _cutlass_device_apis.runners[(dtype, channels)]
-
-
-    q_quant, k_quant, v_quant, q_scale, k_scale, v_scale, k_mean = \
-        sage_quant.sage_quant(runner, q, k, v, smooth=True, use_v_scale=False)
+    q_quant, q_scale = block_quantize_tensor(q, Q_TILE)
+    k_quant, k_scale, k_mean = block_quantize_tensor(k, KV_TILE, smooth=True)
+    v_quant, v_scale = block_quantize_tensor(v, KV_TILE)
 
     return (
-        torch.empty([0], dtype=dtype, device=q.device), # CUTLASS backend doesn't require pre-allocated output
+        torch.empty([0], dtype=q.dtype, device=q.device), # CUTLASS backend doesn't require pre-allocated output
         {
             'q_int8': q_quant,
             'q_scale': q_scale,
@@ -86,21 +80,35 @@ def cutlass_fmha_fp8_from_quantized(
 
     assert sm_version >= 100 and sm_version < 120, "Unsupported SM version"
 
-    runner = _cutlass_device_apis.runners[(q.dtype, channels)]
-    v_scale_nil = torch.empty((0), device=q.device)
-    out, lse = runner(q_quant, k_quant, v_quant, q_scale, k_scale, v_scale_nil, torch.cuda.current_stream().cuda_stream)
+    out = torch.empty_like(q_quant)
+    lse = torch.empty(
+        q_quant.shape[:-1], dtype=torch.float32, device=q_quant.device
+    )
 
-    # The same default value was applied in cutlass::device
+    # Other FMHA kernel parameters
+    run_persistent_kernel = False
     softmax_scale = channels**-0.5
+    inv_scale_o = 1.0 # 1.0 is fine for cosmos. Need to correct in the future
+
+    blackwell_fmha_forward(
+        out,
+        q_quant, k_quant, v_quant,
+        lse,
+        softmax_scale,
+        inv_scale_o,
+        q_scale, k_scale, v_scale,
+        Q_TILE, KV_TILE,
+        run_persistent_kernel,
+    )
 
     # For padded sequence
     out = out[:, :orig_seq_len]
-    lse = lse[..., :orig_seq_len]
+    lse = lse.transpose(-2, -1)[..., :orig_seq_len] # B H S
 
     if tensor_layout.upper() == "HND":
         out = out.transpose(1, 2)
 
     return (
-        out,
+        out.to(q.dtype),
         lse + lse_correction * softmax_scale,
     )
